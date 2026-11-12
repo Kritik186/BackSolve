@@ -104,7 +104,7 @@ svg { display: block; }
 .orbit svg { position: absolute; overflow: visible; }
 .orbit__base, .orbit__top { inset: 0; width: 100%; height: 100%; }
 .orbit__spin { left: -6.6667%; top: 43.8095%; width: 113.3333%; height: auto; aspect-ratio: 1; }
-.orbit__words { fill: #9FB4E6; fill-opacity: 0.85; font-family: var(--font); }
+.orbit__flow { position: absolute; inset: 0; width: 100%; height: 100%; }
 .orbit__label { fill: var(--ice); font-family: var(--font); }
 .orbit__flare { position: absolute; left: 90.4514%; top: 7.1905%; width: 4.4%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(200, 222, 255, 0.85), rgba(110, 155, 255, 0.28) 40%, transparent 68%); transform: translate(-50%, -50%); }
 .orbit__spark { position: absolute; left: 36.5625%; top: 53.2857%; width: 6.25%; height: 3px; margin-top: -1.5px; border-radius: 3px; background: linear-gradient(90deg, rgba(156, 194, 255, 0), #FFFFFF); box-shadow: 0 0 12px rgba(156, 194, 255, 0.9); transform-origin: 0 50%; transform: rotate(-14.01deg) translateX(0); opacity: 0; }

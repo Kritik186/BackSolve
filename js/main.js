@@ -270,10 +270,208 @@
     return { draw, pointer };
   };
 
+  // A stream of light particles flows round the ring. Most stay on the loop; a
+  // few peel off at the start of the beam and escape along it. The particles
+  // part around the pointer, and a burst scatters from the tip of the beam
+  // whenever a spark arrives there.
+  // Everything is worked out in the ring's own coordinates (see .orbit in the
+  // HTML): centre 720,1480, radius 800, beam from 526.5,703.8 to 1302.5,510.2.
+  const makeFlow = (orbit) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+    const topLayer = orbit.querySelector('.orbit__top');
+    if (!ctx || !topLayer) return null;
+    canvas.className = 'orbit__flow';
+    canvas.setAttribute('aria-hidden', 'true');
+    orbit.insertBefore(canvas, topLayer);   // under the beam and the bottom fade
+
+    const CX = 720;
+    const CY = 1480;
+    const R = 800;
+    const START = -14;                      // degrees from the top where the beam leaves the ring
+    const OX = 526.5;                       // the beam's origin, direction and length
+    const OY = 703.8;
+    const UX = 0.9703;
+    const UY = -0.2419;
+    const LENGTH = 799.8;
+    const WINDOW = 52;                      // degrees either side of the top that can be on screen
+    const BASE_SPEED = 3.75;                // degrees per second: the same pace as the ring's lights
+    const colours = [token('--ice', '#DCEBFF'), token('--sky', '#9CC2FF'), '#FFFFFF'];
+    const state = { rate: 1, pointer: null };
+    let scale = 1;                          // canvas pixels per ring unit
+    let last = 0;
+    let particles = [];
+    let bursts = [];
+
+    const toRing = (particle, fresh) => {
+      const rim = Math.random() < 0.76;     // most ride the rim, the rest drift just inside it
+      particle.mode = 'ring';
+      particle.angle = fresh ? -WINDOW + Math.random() * WINDOW * 2 : -WINDOW;
+      particle.offset = rim ? -5 + Math.random() * 8 : -34 + Math.random() * 28;
+      particle.speed = BASE_SPEED * (0.55 + Math.random() * 1.35);
+      particle.alpha = rim ? 0.5 + Math.random() * 0.5 : 0.14 + Math.random() * 0.26;
+      particle.width = rim ? 1.3 + Math.random() * 1.2 : 0.9 + Math.random() * 0.6;
+      particle.glows = rim && Math.random() < 0.35;
+      particle.colour = colours[Math.floor(Math.random() * colours.length)];
+      particle.phase = Math.random() * 6.283;
+      particle.twinkle = 0.8 + Math.random() * 2.2;
+      particle.leaves = rim && Math.random() < 0.12;
+    };
+    const toBeam = (particle, delay) => {
+      particle.mode = 'beam';
+      particle.along = -delay;              // negative: still waiting its turn at the start
+      particle.side = -2.6 + Math.random() * 5.2;
+      particle.pace = 250 + Math.random() * 190;
+      particle.alpha = 0.65 + Math.random() * 0.35;
+      particle.width = 1.4 + Math.random() * 1.1;
+      particle.glows = true;
+    };
+
+    const build = () => {
+      const width = orbit.clientWidth;
+      const height = orbit.clientHeight;
+      if (!width || !height) return;
+      // Cap the pixel count so very large screens do not pay for a huge canvas.
+      const ratio = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(3600000 / (width * height)));
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      scale = (width / 1440) * ratio;
+      if (!particles.length) {
+        particles = Array.from({ length: 240 }, () => {
+          const particle = {};
+          toRing(particle, true);
+          return particle;
+        });
+      }
+    };
+
+    // Send `count` rim particles out along the beam, one after another.
+    const release = (count) => {
+      let sent = 0;
+      for (const particle of particles) {
+        if (sent >= count) break;
+        if (particle.mode !== 'ring' || particle.offset < -6) continue;
+        toBeam(particle, sent * 14 + Math.random() * 10);
+        sent += 1;
+      }
+    };
+
+    // Scatter a few particles from the tip of the beam.
+    const burst = () => {
+      for (let i = 0; i < 22; i += 1) {
+        const heading = Math.atan2(UY, UX) + (Math.random() - 0.5) * 2.6;
+        const pace = 50 + Math.random() * 190;
+        bursts.push({ x: OX + UX * LENGTH, y: OY + UY * LENGTH, vx: Math.cos(heading) * pace, vy: Math.sin(heading) * pace, age: 0, life: 0.45 + Math.random() * 0.5, colour: colours[i % colours.length] });
+      }
+    };
+
+    const stroke = (x1, y1, x2, y2, width, alpha, colour) => {
+      if (alpha <= 0.01) return;
+      ctx.globalAlpha = Math.min(1, alpha);
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    };
+    // A mote of light: a faint tail behind it, a bright head, and for some a soft halo.
+    // (dx, dy) is the tail, pointing back along the way it came.
+    const mote = (x, y, dx, dy, width, alpha, colour, glows) => {
+      stroke(x - dx, y - dy, x, y, width * 0.8, alpha * 0.35, colour);
+      stroke(x - dx * 0.22, y - dy * 0.22, x, y, width * 1.3, alpha, colour);
+      if (glows) stroke(x - dx * 0.22, y - dy * 0.22, x, y, width * 4.5, alpha * 0.16, colour);
+    };
+
+    const draw = (now) => {
+      const dt = last ? Math.min(0.064, (now - last) / 1000) : 0;
+      last = now;
+      const time = now / 1000;
+      const pointer = state.pointer;
+
+      ctx.setTransform(scale, 0, 0, scale, 0, -480 * scale);   // ring units, with the visible strip starting at y = 480
+      ctx.clearRect(0, 480, 1440, 420);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+
+      for (const particle of particles) {
+        if (particle.mode === 'ring') {
+          const before = particle.angle;
+          particle.angle += particle.speed * state.rate * dt;
+          if (particle.leaves && before < START && particle.angle >= START) {
+            toBeam(particle, 0);
+            continue;
+          }
+          if (particle.angle > WINDOW) toRing(particle, false);
+
+          const a = (particle.angle * Math.PI) / 180;
+          const sin = Math.sin(a);
+          const cos = Math.cos(a);
+          const radius = R + particle.offset;
+          let x = CX + radius * sin;
+          let y = CY - radius * cos;
+          let alpha = particle.alpha * (0.55 + 0.45 * Math.sin(time * particle.twinkle + particle.phase));
+          alpha *= clamp((WINDOW - Math.abs(particle.angle)) / 9, 0, 1);   // fade in and out at the edges
+          let width = particle.width;
+          if (pointer) {
+            const dx = x - pointer.x;
+            const dy = y - pointer.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 150) {
+              const near = 1 - distance / 150;
+              const push = (near * 16) / (distance || 1);
+              x += dx * push;
+              y += dy * push;
+              alpha += near * 0.6;
+              width *= 1 + near;
+            }
+          }
+          const tail = 5 + particle.speed * state.rate * 2.2;
+          mote(x, y, cos * tail, sin * tail, width, alpha, particle.colour, particle.glows);
+        } else {
+          particle.along += particle.pace * (0.75 + 0.25 * state.rate) * dt;
+          if (particle.along > LENGTH) {
+            toRing(particle, false);
+            continue;
+          }
+          if (particle.along < 0) continue;
+          const fade = clamp(particle.along / 40, 0, 1) * clamp((LENGTH - particle.along) / 90, 0, 1);
+          const x = OX + UX * particle.along - UY * particle.side;
+          const y = OY + UY * particle.along + UX * particle.side;
+          mote(x, y, UX * 30, UY * 30, particle.width, particle.alpha * fade, particle.colour, true);
+        }
+      }
+
+      if (bursts.length) {
+        bursts = bursts.filter((spark) => {
+          spark.age += dt;
+          if (spark.age >= spark.life) return false;
+          const drag = 1 - 2.2 * dt;
+          spark.vx *= drag;
+          spark.vy *= drag;
+          spark.x += spark.vx * dt;
+          spark.y += spark.vy * dt;
+          mote(spark.x, spark.y, spark.vx * 0.09, spark.vy * 0.09, 1.8, 1 - spark.age / spark.life, spark.colour, true);
+          return true;
+        });
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    build();
+    if ('ResizeObserver' in window) {
+      new ResizeObserver(() => {
+        build();
+        if (reduceMotion) draw(0);
+      }).observe(orbit);
+    }
+    return { draw, release, burst, state };
+  };
+
   // The ring spins faster while the page is being scrolled, then settles. A
   // spark leaves along the beam each time one of the ring's lights passes the
   // point where the beam starts, whatever speed the ring is turning at.
-  const makeRing = () => {
+  const makeRing = (flow) => {
     const orbit = document.getElementById('orbit');
     const spinEl = hero.querySelector('.orbit__spin');
     const sparkEl = hero.querySelector('.orbit__spark');
@@ -292,7 +490,8 @@
     let lastPhase = null;
     let lastSpark = 0;
 
-    const fireSpark = () => {
+    // `extra` is how many particles to send out with the spark.
+    const fire = (extra) => {
       sparkEl.animate([
         { opacity: 0, transform: `${HEADING} translateX(-30%)` },
         { opacity: 1, offset: 0.08 },
@@ -304,32 +503,71 @@
         { transform: 'translate(-50%, -50%) scale(1.9)', offset: 0.25 },
         { transform: 'translate(-50%, -50%) scale(1)' },
       ], { duration: 1300, delay: 1050, easing: 'ease-out' });
+      if (flow) {
+        flow.release(extra);
+        window.setTimeout(flow.burst, 1150);   // when the spark reaches the tip
+      }
     };
 
-    return (now) => {
+    const tick = (now) => {
       const target = 1 + Math.min(Math.abs(scroll.velocity) * 5, 7);
       rate += (target - rate) * 0.08;
       scroll.velocity *= 0.92;
       if (Math.abs(rate - spin.playbackRate) > 0.02) spin.playbackRate = rate;
+      if (flow) flow.state.rate = rate;
 
       const angle = (((spin.currentTime || 0) % TURN) / TURN) * 360;
       const phase = (((angle - OFFSET) % STEP) + STEP) % STEP;
       if (lastPhase !== null && phase < lastPhase && now > readyAt && now - lastSpark > 900) {
         lastSpark = now;
-        fireSpark();
+        fire(5);
       }
       lastPhase = phase;
     };
+    return { tick, fire };
+  };
+
+  // "the way out" settles out of scrambled letters, like an answer being worked out.
+  let scrambling = false;
+  const scramble = (element, answer) => {
+    if (scrambling) return;
+    scrambling = true;
+    const letters = 'abcdefghijklmnopqrstuvwxyz';
+    let began = 0;
+    const step = (now) => {
+      if (!began) began = now;
+      const settled = ((now - began) / 700) * answer.length;
+      let text = '';
+      for (let i = 0; i < answer.length; i += 1) {
+        text += i < settled || answer[i] === ' ' ? answer[i] : letters[Math.floor(Math.random() * letters.length)];
+      }
+      element.textContent = text;
+      if (settled >= answer.length) {
+        element.textContent = answer;
+        scrambling = false;
+        stopTask(step);
+      }
+    };
+    startTask(step);
   };
 
   if (sky) {
     const stars = makeStars();
-    const ringTick = hero && !reduceMotion ? makeRing() : null;
+    const orbit = hero ? document.getElementById('orbit') : null;
+    const flow = orbit ? makeFlow(orbit) : null;
+    const ring = hero && !reduceMotion ? makeRing(flow) : null;
     const spot = sky.querySelector('.hero__spot');
+    const label = hero ? hero.querySelector('.orbit__label') : null;
+    const labelText = label ? label.textContent : '';
 
-    if (stars && reduceMotion) stars.draw(0);   // a still sky, no movement
+    if (reduceMotion) {
+      if (stars) stars.draw(0);   // a still sky and a still ring of particles
+      if (flow) flow.draw(0);
+    } else if (label) {
+      window.setTimeout(() => scramble(label, labelText), 2100);   // as the label fades in
+    }
 
-    // A soft light and the stars follow the pointer.
+    // A soft light and the stars follow the pointer, and the ring's particles part around it.
     if (finePointer && !reduceMotion) {
       sky.addEventListener('pointermove', (event) => {
         const rect = sky.getBoundingClientRect();
@@ -343,6 +581,13 @@
           stars.pointer.tx = x;
           stars.pointer.ty = y;
         }
+        if (flow) {
+          const box = orbit.getBoundingClientRect();
+          flow.state.pointer = {
+            x: ((event.clientX - box.left) / box.width) * 1440,
+            y: 480 + ((event.clientY - box.top) / box.height) * 420,
+          };
+        }
       });
       sky.addEventListener('pointerleave', () => {
         if (spot) {
@@ -353,6 +598,20 @@
           stars.pointer.tx = 0;
           stars.pointer.ty = 0;
         }
+        if (flow) flow.state.pointer = null;
+      });
+    }
+
+    // Clicking or tapping open sky in the hero sends a wave of particles out along the beam.
+    if (hero && ring && flow) {
+      let lastWave = 0;
+      hero.addEventListener('pointerdown', (event) => {
+        const now = performance.now();
+        if (event.button !== 0 || now - lastWave < 700) return;
+        if (event.target.closest('a, button, input, textarea, summary')) return;
+        lastWave = now;
+        ring.fire(26);
+        if (label) scramble(label, labelText);
       });
     }
 
@@ -372,7 +631,7 @@
     const setRunning = (running) => {
       sky.classList.toggle('is-paused', !running);
       if (reduceMotion) return;
-      [stars && stars.draw, ringTick].forEach((task) => {
+      [stars && stars.draw, flow && flow.draw, ring && ring.tick].forEach((task) => {
         if (!task) return;
         if (running) startTask(task);
         else stopTask(task);

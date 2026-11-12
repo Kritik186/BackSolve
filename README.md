@@ -104,7 +104,9 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 
 **Always running in the hero**
 - Stars drift and twinkle behind the headline. On wide screens one shoots across the open sky every few seconds.
-- A ring of "collect, reconcile, format, report" turns slowly with lights travelling round it. Each time a light passes the start of the beam, a spark leaves the ring and runs along it.
+- The ring turns slowly with lights travelling round it, and a stream of light particles flows along it. Most stay on the loop; a few peel off where the beam starts and escape along it.
+- Each time one of the ring's lights passes the start of the beam, a spark and a handful of particles leave together, and a burst scatters from the tip when they arrive.
+- "the way out" settles out of scrambled letters as it appears.
 
 **Following the scroll**
 - Scrolling away from the hero flies into the ring: the headline lifts and fades, the ring grows, the stars lag behind.
@@ -115,7 +117,8 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 - A progress bar at the top fills as the page scrolls, and the header link for the section on screen is highlighted.
 
 **Following the pointer**
-- A soft light and the stars shift with the pointer across the hero.
+- A soft light and the stars shift with the pointer across the hero, and the ring's particles part around it.
+- Clicking or tapping open sky in the hero sends a wave of particles out along the beam.
 - The main buttons lean toward the pointer. Cards tilt toward it and a highlight follows it.
 - Hovering the name in the header fires the line out of the loop again.
 

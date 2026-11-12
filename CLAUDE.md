@@ -4,7 +4,7 @@
 
 A three-page marketing site (home, use cases, services) for BackSolve AI, a consultancy that audits how small private equity, venture capital and finance advisory firms work, then builds AI to remove their repeated manual work. Tagline: "Stuck in a loop? We backsolve the way out."
 
-The design is called "Orbit": a dark site where the loop is a glowing ring of "collect, reconcile, format, report" and the way out is a beam of light leaving it.
+The design is called "Orbit": a dark site where the loop is a glowing ring of lights and the way out is a beam of light leaving it. There are no words on the ring: the owner asked for them to be removed.
 
 ## Stack
 
@@ -36,8 +36,9 @@ The design is called "Orbit": a dark site where the loop is a glowing ring of "c
 ## The hero ring
 
 - Everything in `.orbit` shares one coordinate space: ring centre `720,1480`, radius `800`, beam from `526.5,703.8` to `1302.5,510.2`.
-- Three stacked layers: `.orbit__base` (glow, ring), `.orbit__spin` (words and lights, rotated by CSS so it stays on the compositor), `.orbit__top` (beam, arrow, label, bottom fade). `.orbit__spark` and `.orbit__flare` are plain elements positioned in percentages of the same space.
+- Stacked layers, bottom to top: `.orbit__base` (glow, ring), `.orbit__spin` (the 16 lights, rotated by CSS so it stays on the compositor), `.orbit__flow` (a canvas the script inserts: the particle stream), `.orbit__top` (beam, arrow, label, bottom fade). `.orbit__spark` and `.orbit__flare` are plain elements positioned in percentages of the same space.
 - The ring turns once in 96 seconds and carries 16 lights, so at rest one passes the start of the beam every 6 seconds. `makeRing` in `js/main.js` reads the spin animation's clock and fires a spark each time a light passes, so the two stay in time even while scrolling speeds the ring up. Its `TURN`, `STEP` and `OFFSET` constants must match the CSS duration and the lights in `index.html`.
+- `makeFlow` draws the particle stream in the same coordinates. Particles ride the ring at about the lights' pace; some leave at the start of the beam; `release(n)` sends more out with each spark and `burst()` scatters a few from the tip. Its `START`, origin, direction and `LENGTH` constants repeat the beam's geometry, so change them together with the SVG.
 - With JavaScript off, a timed CSS fallback fires the spark every 6 seconds (the `spark` keyframes, starting at 6.9s). The script switches it off by adding `orbit--live`.
 - The stars are a canvas the script inserts as the first child of `.hero`. Shooting stars are confined to open sky so they never cross the text, and phones get none.
 - Do not add blur filters to anything that animates. The blurred glows are static on purpose.

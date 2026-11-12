@@ -16,15 +16,17 @@ The design is called "Orbit": a dark page where the loop is a glowing ring of "c
 
 - `index.html`: all sections and copy, in page order.
 - `css/styles.css`: tokens in `:root`, then base, type, buttons, header, hero, sections, motion, responsive.
-- `js/main.js`: one IIFE. `CONFIG` at the top holds the email and booking link.
-- `assets/`: `favicon.svg`, `logo.svg` (placeholder mark until the logo is chosen).
+- `js/main.js`: one IIFE. `CONFIG` at the top holds the email and booking link. Below it: one shared frame loop (`startTask` / `stopTask`), one shared scroll reader (`watchScroll`), then a block per animation.
+- `assets/`: `favicon.svg`, `logo.svg`. The mark (a loop with a line leaving it) is also inline in the header and footer of `index.html`.
 
 ## Conventions
 
 - Class names are BEM-like: `block__element--modifier`.
 - Colours and fonts come from the CSS custom properties in `:root`. Do not hard-code new colours in CSS. The inline SVGs in `index.html` repeat a few of the same hex values because SVG gradients cannot read them.
 - One typeface: Geist, weights 400, 500 and 600.
-- Motion hooks are data attributes: `data-reveal` (block fades up), `data-stagger` (children reveal in sequence), `data-track` (the three-step line draws and its nodes light).
+- Motion hooks are data attributes: `data-reveal` (block fades up), `data-stagger` (children reveal in sequence), `data-track` (the three-step line that follows the scroll).
+- The script hands numbers to CSS through custom properties and CSS does the drawing: `--p` on `.hero` (0 at the top of the page, 1 once the hero has scrolled away), `--t` on `.track` (how far the steps line has run), `--mx` `--my` `--rx` `--ry` on each card (highlight and tilt), `--bx` `--by` on buttons (lean), `--px` `--py` on the hero light.
+- Anything that needs a frame-by-frame update registers with `startTask` and must stop itself with `stopTask` when it is off screen or finished. Do not add a second `requestAnimationFrame` loop or a second scroll listener.
 - All motion must respect `prefers-reduced-motion`, and the page must stay readable with JavaScript off. Reveal styles are scoped under the `.js` class for that reason.
 - Breakpoints: 1100px, 900px, 760px, 600px.
 
@@ -32,7 +34,9 @@ The design is called "Orbit": a dark page where the loop is a glowing ring of "c
 
 - Everything in `.orbit` shares one coordinate space: ring centre `720,1480`, radius `800`, beam from `526.5,703.8` to `1302.5,510.2`.
 - Three stacked layers: `.orbit__base` (glow, ring), `.orbit__spin` (words and lights, rotated by CSS so it stays on the compositor), `.orbit__top` (beam, arrow, label, bottom fade). `.orbit__spark` and `.orbit__flare` are plain elements positioned in percentages of the same space.
-- The ring turns once in 96 seconds and carries 16 lights, so one passes the start of the beam every 6 seconds. The spark animation is 6 seconds long and starts at 6.9s to stay in time with them. If you change one of those numbers, change the others.
+- The ring turns once in 96 seconds and carries 16 lights, so at rest one passes the start of the beam every 6 seconds. `makeRing` in `js/main.js` reads the spin animation's clock and fires a spark each time a light passes, so the two stay in time even while scrolling speeds the ring up. Its `TURN`, `STEP` and `OFFSET` constants must match the CSS duration and the lights in `index.html`.
+- With JavaScript off, a timed CSS fallback fires the spark every 6 seconds (the `spark` keyframes, starting at 6.9s). The script switches it off by adding `orbit--live`.
+- The stars are a canvas the script inserts as the first child of `.hero`. Shooting stars are confined to open sky so they never cross the text, and phones get none.
 - Do not add blur filters to anything that animates. The blurred glows are static on purpose.
 
 ## Content rules
@@ -45,5 +49,6 @@ The design is called "Orbit": a dark page where the loop is a glowing ring of "c
 ## Checks before finishing a change
 
 - Load the page at 1440px, 1366px and 390px wide. There must be no horizontal scroll, and the beam must not cross the hero buttons.
-- Scroll to the bottom and confirm every section has revealed.
+- Scroll to the bottom and confirm every section has revealed and all three steps in "How we backsolve" are lit.
+- Load the page once with reduced motion switched on: everything must be visible and nothing may move.
 - Submit the form with `CONFIG.email` empty and confirm the "not connected" message appears.

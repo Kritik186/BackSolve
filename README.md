@@ -18,9 +18,9 @@ python3 -m http.server 8000
 ```
 index.html          The page: all sections and copy
 css/styles.css      Design tokens (colours, type), layout, components, motion
-js/main.js          Scroll progress, reveals, pointer effects, form, config
+js/main.js          All animation and behaviour, the form, and CONFIG
 assets/favicon.svg  Browser tab icon
-assets/logo.svg     Placeholder mark (a loop with a line leaving it)
+assets/logo.svg     The mark on its own (a loop with a line leaving it)
 CLAUDE.md           Project notes for Claude Code
 ```
 
@@ -51,9 +51,9 @@ There is no server behind the form. If you would rather collect submissions with
 - The team section says the engineers come from Bain & Company and J.P. Morgan. Keep it only if that is true of the people who will do the work.
 - There are no testimonials, client logos or results numbers on the page. Add them only when they are real.
 
-### 4. Choose the logo
+### 4. Confirm the logo
 
-The header shows the name as text. `assets/favicon.svg` and `assets/logo.svg` hold a placeholder mark. Replace both when the logo is decided.
+The mark is a loop with a line leaving it, drawn as inline SVG next to the name in the header and the footer of `index.html`. The same shape is in `assets/favicon.svg` and `assets/logo.svg`. To change the logo, replace it in those four places.
 
 ### 5. Add a privacy page
 
@@ -82,10 +82,30 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 
 ## Motion
 
-- **Hero.** A ring of "copy, paste, repeat" turns slowly with lights travelling round it. On load a beam draws out of the ring to "the way out". Every 6 seconds, as a light passes the start of the beam, a spark leaves the ring and runs along it.
-- **Pointer.** A soft light follows the pointer across the hero, and a highlight follows it across each card.
-- **The loops.** The dot on each card's icon keeps circling.
-- **How we backsolve.** The line draws across the three steps and each node lights in turn.
-- **Everything else.** Sections fade and rise as they enter the screen; lists reveal item by item. A progress bar at the top fills as the page scrolls, and the header link for the section on screen is highlighted.
+**On load**
+- The headline arrives word by word, the mark in the header draws itself, and a beam draws out of the ring to "the way out".
 
-The hero animations pause when the hero is off screen. All motion is switched off for visitors who have asked their device to reduce motion, and the page is fully readable with JavaScript disabled.
+**Always running in the hero**
+- Stars drift and twinkle behind the headline. On wide screens one shoots across the open sky every few seconds.
+- A ring of "copy, paste, repeat" turns slowly with lights travelling round it. Each time a light passes the start of the beam, a spark leaves the ring and runs along it.
+
+**Following the scroll**
+- Scrolling away from the hero flies into the ring: the headline lifts and fades, the ring grows, the stars lag behind.
+- The ring spins faster while the page is moving, then settles. The header mark spins too and comes to rest upright.
+- In "How we backsolve", a light runs along the line as you scroll and each step lights as it arrives.
+- The team headline lights up word by word.
+- Sections fade and rise as they enter the screen, lists reveal item by item, and the ticks in the audit list draw themselves.
+- A progress bar at the top fills as the page scrolls, and the header link for the section on screen is highlighted.
+
+**Following the pointer**
+- A soft light and the stars shift with the pointer across the hero.
+- The main buttons lean toward the pointer. Cards tilt toward it and a highlight follows it.
+- Hovering the name in the header fires the line out of the loop again.
+
+**Small touches**
+- The dot on each loop card keeps circling.
+- In "After the audit", the highlight steps through Audit, Build sprints and Retainer.
+- Answers in the questions section open and close smoothly.
+- The horizon above the booking form brightens while someone is typing in it.
+
+Everything that draws per frame shares one `requestAnimationFrame` loop and stops when it is off screen. All motion is switched off for visitors who have asked their device to reduce motion, and the page is fully readable with JavaScript disabled.

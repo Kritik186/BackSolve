@@ -1,6 +1,6 @@
 # BackSolve AI — website
 
-One-page marketing site for BackSolve AI, in the "Orbit" design. Plain HTML, CSS and JavaScript: no framework, no build step, no dependencies.
+Marketing site for BackSolve AI, in the "Orbit" design: a home page, a Use cases page and a Services page. Plain HTML, CSS and JavaScript: no framework, no build step, no dependencies.
 
 > Stuck in a loop? We backsolve the way out.
 
@@ -24,7 +24,9 @@ python3 -m http.server 8000
 ## What is in here
 
 ```
-index.html          The page: all sections and copy
+index.html          Home page
+use-cases.html      Ten example use cases, with a filter by kind of firm
+services.html       The Loop Audit, build sprints and the retainer in detail
 css/styles.css      Design tokens (colours, type), layout, components, motion
 js/main.js          All animation and behaviour, the form, and CONFIG
 assets/favicon.svg  Browser tab icon
@@ -36,14 +38,15 @@ CLAUDE.md           Project notes for Claude Code
 
 ### 1. Fill in the placeholders
 
-Everything that is not yet known is written in CAPITALS inside [SQUARE BRACKETS] in `index.html`, usually with a `TODO` comment above it. Search for `[` to find them all.
+Everything that is not yet known is written in CAPITALS inside [SQUARE BRACKETS] in the three `.html` files, usually with a `TODO` comment above it. Search for `[` to find them all.
 
 | Section | What to fill in |
 |---|---|
 | The Loop Audit | Audit length and price |
 | Why BackSolve AI | The tools you work in, and your data promise |
 | Questions | Time needed from the client's team, your data policy, your price, the tools you support |
-| Footer | Email, LinkedIn and privacy page links |
+| Services page | Audit length and price, sprint length, monthly fee, notice period, how often you review progress, what the retainer includes, time needed from the client |
+| Footer (all three pages) | Email, LinkedIn and privacy page links |
 
 ### 2. Connect the "Book a call" buttons and the form
 
@@ -57,11 +60,12 @@ There is no server behind the form. If you would rather collect submissions with
 ### 3. Check every claim
 
 - The team section says the engineers come from Bain & Company and J.P. Morgan. Keep it only if that is true of the people who will do the work.
-- There are no testimonials, client logos or results numbers on the page. Add them only when they are real.
+- There are no testimonials, client logos or results numbers on the site. Add them only when they are real.
+- The ten use cases are examples of what you build, and the page says so. Check that each one is something you are willing to sell. When a client agrees to share a real story, add it to `use-cases.html` (there is a `TODO` comment marking the spot).
 
 ### 4. Confirm the logo
 
-The mark is a loop with a line leaving it, drawn as inline SVG next to the name in the header and the footer of `index.html`. The same shape is in `assets/favicon.svg` and `assets/logo.svg`. To change the logo, replace it in those four places.
+The mark is a loop with a line leaving it, drawn as inline SVG next to the name in the header and the footer of every page. The same shape is in `assets/favicon.svg` and `assets/logo.svg`. To change the logo, replace it in the header and footer of all three pages and in those two files.
 
 ### 5. Let search engines in
 
@@ -88,7 +92,8 @@ The site is a folder of static files, so any static host will serve it as is: Ve
 | `--blue` | `#4D7CFF` | The ring, lines, glows |
 | `--sky` | `#9CC2FF` | Focus rings, status text |
 | `--ice` | `#DCEBFF` | Highlights, lit nodes, arrows |
-| Typeface | Geist (Google Fonts) | Everything |
+| `--font-display` | Newsreader 500 (Google Fonts) | Headlines |
+| `--font` | Geist 400, 500, 600 (Google Fonts) | Everything else |
 
 All tokens live at the top of `css/styles.css` as CSS custom properties.
 
@@ -99,7 +104,7 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 
 **Always running in the hero**
 - Stars drift and twinkle behind the headline. On wide screens one shoots across the open sky every few seconds.
-- A ring of "copy, paste, repeat" turns slowly with lights travelling round it. Each time a light passes the start of the beam, a spark leaves the ring and runs along it.
+- A ring of "collect, reconcile, format, report" turns slowly with lights travelling round it. Each time a light passes the start of the beam, a spark leaves the ring and runs along it.
 
 **Following the scroll**
 - Scrolling away from the hero flies into the ring: the headline lifts and fades, the ring grows, the stars lag behind.
@@ -113,6 +118,12 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 - A soft light and the stars shift with the pointer across the hero.
 - The main buttons lean toward the pointer. Cards tilt toward it and a highlight follows it.
 - Hovering the name in the header fires the line out of the loop again.
+
+**Inner pages**
+- Each page opens with the same stars and word-by-word headline.
+- On Use cases, the filter brings the matching examples in one after another, and the arrow from "The loop today" to "The way out" draws as each row arrives.
+- On Services, the summary of each service stays in view while its details scroll past.
+- On small screens the menu button opens and closes the links panel.
 
 **Small touches**
 - The dot on each loop card keeps circling.

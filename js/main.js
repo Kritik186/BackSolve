@@ -145,7 +145,10 @@
   }
 
   // --- Hero --------------------------------------------------------------------
+  // `hero` is the home page's opening section. `sky` is whatever opens the
+  // current page (the hero, or the head of an inner page): it gets the stars.
   const hero = document.querySelector('.hero');
+  const sky = hero || document.querySelector('.pagehead');
 
   // Stars drift behind the headline, shift with the pointer, and now and then
   // one shoots across in the same direction as the beam.
@@ -155,7 +158,7 @@
     if (!ctx) return null;
     canvas.className = 'hero__stars';
     canvas.setAttribute('aria-hidden', 'true');
-    hero.insertBefore(canvas, hero.firstChild);
+    sky.insertBefore(canvas, sky.firstChild);
 
     const near = token('--ice', '#DCEBFF');
     const far = token('--sky', '#9CC2FF');
@@ -172,13 +175,13 @@
     let last = 0;
 
     const build = () => {
-      width = hero.clientWidth;
-      height = hero.clientHeight;
+      width = sky.clientWidth;
+      height = sky.clientHeight;
       ratio = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(height * ratio);
-      const copy = hero.querySelector('.hero__copy > *');
-      clearTop = copy ? copy.getBoundingClientRect().top - hero.getBoundingClientRect().top : 0;
+      const copy = sky.querySelector('.hero__copy > *');
+      clearTop = copy ? copy.getBoundingClientRect().top - sky.getBoundingClientRect().top : 0;
       const count = clamp(Math.round((width * height) / 8000), 50, 200);
       stars = Array.from({ length: count }, () => ({
         x: Math.random(),
@@ -262,7 +265,7 @@
       new ResizeObserver(() => {
         build();
         if (reduceMotion) draw(0);
-      }).observe(hero);
+      }).observe(sky);
     }
     return { draw, pointer };
   };
@@ -319,17 +322,17 @@
     };
   };
 
-  if (hero) {
+  if (sky) {
     const stars = makeStars();
-    const ringTick = reduceMotion ? null : makeRing();
-    const spot = hero.querySelector('.hero__spot');
+    const ringTick = hero && !reduceMotion ? makeRing() : null;
+    const spot = sky.querySelector('.hero__spot');
 
     if (stars && reduceMotion) stars.draw(0);   // a still sky, no movement
 
     // A soft light and the stars follow the pointer.
     if (finePointer && !reduceMotion) {
-      hero.addEventListener('pointermove', (event) => {
-        const rect = hero.getBoundingClientRect();
+      sky.addEventListener('pointermove', (event) => {
+        const rect = sky.getBoundingClientRect();
         const x = (event.clientX - rect.left) / rect.width - 0.5;
         const y = (event.clientY - rect.top) / rect.height - 0.5;
         if (spot) {
@@ -341,7 +344,7 @@
           stars.pointer.ty = y;
         }
       });
-      hero.addEventListener('pointerleave', () => {
+      sky.addEventListener('pointerleave', () => {
         if (spot) {
           spot.style.setProperty('--px', '0px');
           spot.style.setProperty('--py', '0px');
@@ -355,7 +358,7 @@
 
     // Scrolling away flies into the ring: the headline lifts and fades, the
     // ring grows, the stars lag behind. CSS reads --p (0 at the top, 1 when gone).
-    if (!reduceMotion) {
+    if (hero && !reduceMotion) {
       let lastP = -1;
       watchScroll(() => {
         const p = clamp(scroll.y / (hero.offsetHeight * 0.85), 0, 1);
@@ -365,9 +368,9 @@
       });
     }
 
-    // Per-frame work runs only while the hero is on screen.
+    // Per-frame work runs only while the top of the page is on screen.
     const setRunning = (running) => {
-      hero.classList.toggle('is-paused', !running);
+      sky.classList.toggle('is-paused', !running);
       if (reduceMotion) return;
       [stars && stars.draw, ringTick].forEach((task) => {
         if (!task) return;
@@ -378,7 +381,7 @@
     if (hasObserver) {
       new IntersectionObserver((entries) => {
         entries.forEach((entry) => setRunning(entry.isIntersecting));
-      }).observe(hero);
+      }).observe(sky);
     } else {
       setRunning(true);
     }
@@ -526,6 +529,51 @@
         };
       });
     });
+  }
+
+  // --- Header menu on small screens ---------------------------------------------
+  const nav = header ? header.querySelector('.nav') : null;
+  const menuButton = nav ? nav.querySelector('.nav__toggle') : null;
+  if (nav && menuButton) {
+    const setOpen = (open) => {
+      nav.classList.toggle('is-open', open);
+      menuButton.setAttribute('aria-expanded', String(open));
+    };
+    menuButton.addEventListener('click', () => setOpen(!nav.classList.contains('is-open')));
+    nav.querySelectorAll('.nav__links a').forEach((link) => link.addEventListener('click', () => setOpen(false)));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    });
+    document.addEventListener('click', (event) => {
+      if (!nav.contains(event.target)) setOpen(false);
+    });
+  }
+
+  // --- Use cases: filter the examples by kind of firm ---------------------------
+  const filters = document.querySelector('.filters');
+  if (filters) {
+    const buttons = Array.from(filters.querySelectorAll('.filter'));
+    const cases = Array.from(document.querySelectorAll('.case'));
+    const count = filters.querySelector('.filters__count');
+    const show = (kind) => {
+      let shown = 0;
+      cases.forEach((item) => {
+        const match = kind === 'all' || item.dataset.kinds.split(' ').includes(kind);
+        item.hidden = !match;
+        if (!match) return;
+        item.classList.add('is-visible');   // filtered rows arrive at once, whether or not they had scrolled into view
+        if (!reduceMotion && item.animate) {
+          item.animate([
+            { opacity: 0, transform: 'translateY(14px)' },
+            { opacity: 1, transform: 'none' },
+          ], { duration: 450, delay: shown * 45, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)', fill: 'backwards' });
+        }
+        shown += 1;
+      });
+      buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.kind === kind)));
+      if (count) count.textContent = `Showing ${shown} of ${cases.length}`;
+    };
+    buttons.forEach((button) => button.addEventListener('click', () => show(button.dataset.kind)));
   }
 
   // --- Header links: mark the section currently on screen --------------------

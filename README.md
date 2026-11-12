@@ -4,6 +4,14 @@ One-page marketing site for BackSolve AI, in the "Orbit" design. Plain HTML, CSS
 
 > Stuck in a loop? We backsolve the way out.
 
+## Live preview
+
+https://kritik186.github.io/BackSolve/
+
+GitHub Pages serves the `main` branch of this repository, so every push to `main` shows up there a minute or two later. It costs nothing while the repository is public.
+
+The page carries a `noindex` tag so search engines skip it while it still has placeholders. Remove that line from the `<head>` of `index.html` when you launch.
+
 ## Run it locally
 
 Any static file server works. From this folder:
@@ -55,7 +63,11 @@ There is no server behind the form. If you would rather collect submissions with
 
 The mark is a loop with a line leaving it, drawn as inline SVG next to the name in the header and the footer of `index.html`. The same shape is in `assets/favicon.svg` and `assets/logo.svg`. To change the logo, replace it in those four places.
 
-### 5. Add a privacy page
+### 5. Let search engines in
+
+Delete the `<meta name="robots" content="noindex">` line from the `<head>` of `index.html`.
+
+### 6. Add a privacy page
 
 The form collects a name and an email address, so link a privacy page from the footer before going live.
 

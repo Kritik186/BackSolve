@@ -150,6 +150,22 @@
   const hero = document.querySelector('.hero');
   const sky = hero || document.querySelector('.pagehead');
 
+  // One soft dot of light, drawn once and stamped wherever a bright star needs a halo.
+  const makeHalo = () => {
+    const halo = document.createElement('canvas');
+    halo.width = 64;
+    halo.height = 64;
+    const haloCtx = halo.getContext('2d');
+    const glowFill = haloCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    glowFill.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    glowFill.addColorStop(0.16, 'rgba(220, 235, 255, 0.6)');
+    glowFill.addColorStop(0.5, 'rgba(120, 160, 255, 0.13)');
+    glowFill.addColorStop(1, 'rgba(120, 160, 255, 0)');
+    haloCtx.fillStyle = glowFill;
+    haloCtx.fillRect(0, 0, 64, 64);
+    return halo;
+  };
+
   // The sky. Stars sit at three depths, so nearer ones move more with the
   // pointer and with the page. The brightest have a soft halo and a glint.
   // Stars near the pointer link up into a small constellation, fast scrolling
@@ -182,18 +198,7 @@
     let lastScroll = window.scrollY;
     let streak = 0;         // px: how far the stars are stretched by scrolling
 
-    // One soft dot of light, drawn once and stamped wherever a bright star needs a halo.
-    const halo = document.createElement('canvas');
-    halo.width = 64;
-    halo.height = 64;
-    const haloCtx = halo.getContext('2d');
-    const glowFill = haloCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    glowFill.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    glowFill.addColorStop(0.16, 'rgba(220, 235, 255, 0.6)');
-    glowFill.addColorStop(0.5, 'rgba(120, 160, 255, 0.13)');
-    glowFill.addColorStop(1, 'rgba(120, 160, 255, 0)');
-    haloCtx.fillStyle = glowFill;
-    haloCtx.fillRect(0, 0, 64, 64);
+    const halo = makeHalo();
 
     const build = () => {
       width = sky.clientWidth;
@@ -503,6 +508,262 @@
       }).observe(sky);
     } else {
       setRunning(true);
+    }
+  }
+
+  // --- Backdrop: a quieter sky behind the rest of the page ------------------------
+  // One canvas, fixed behind every section below the top of the page. It is the
+  // hero's sky turned down: fewer and dimmer stars. Scrolling moves the near
+  // ones further than the far ones, so the page seems to pass over a deep
+  // field. Stars near the pointer link into a constellation, and on wide
+  // screens a spark now and then crosses the empty margin beside the text, on
+  // the same heading as the beam. CSS keeps it behind everything (z-index -1).
+  const makeBackdrop = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+    if (!ctx) return null;
+    canvas.className = 'backdrop';
+    canvas.setAttribute('aria-hidden', 'true');
+    document.body.insertBefore(canvas, document.body.firstChild);
+
+    const halo = makeHalo();
+    const near = token('--ice', '#DCEBFF');
+    const far = token('--sky', '#9CC2FF');
+    const DIR_X = 0.9703;   // the beam's heading
+    const DIR_Y = -0.2419;
+    const REACH = 140;      // px: how far from the pointer stars join the constellation
+    const GRID = 72;        // px: the hero grid's spacing
+    const GRID_REACH = 250; // px: how far from the pointer the grid shows
+    const pointer = { x: 0, y: 0, inside: false };
+    let width = 0;
+    let height = 0;
+    let ratio = 1;
+    let stars = [];
+    let margin = 0;         // px of empty page either side of the text column
+    let shot = null;
+    let nextShot = performance.now() + 5000;
+    let last = 0;
+    let lastScroll = window.scrollY;
+    let streak = 0;
+
+    const build = () => {
+      const widthChanged = window.innerWidth !== width;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      margin = (width - Math.min(width - 48, parseFloat(token('--wrap', '1120')) || 1120)) / 2;
+      // Phones resize whenever the address bar slides away. Keep the same stars
+      // then, or the whole sky would jump.
+      if (stars.length && !widthChanged) return;
+      const count = clamp(Math.round((width * height) / 8600), 40, 190);
+      let glints = 0;
+      stars = Array.from({ length: count }, () => {
+        const depth = 0.15 + Math.random() * 0.85;
+        const bright = depth > 0.9;
+        const star = {
+          x: Math.random(),
+          y: Math.random(),
+          depth,
+          bright,
+          glint: false,
+          size: bright ? 1.1 + Math.random() * 0.7 : 0.4 + depth * (0.4 + Math.random() * 0.6),
+          alpha: bright ? 0.6 + Math.random() * 0.3 : 0.16 + depth * (0.2 + Math.random() * 0.36),
+          phase: Math.random() * 6.283,
+          speed: 0.4 + Math.random() * 1.2,
+          sx: 0,
+          sy: 0,
+        };
+        if (bright && glints < 5 && Math.random() < 0.45) {
+          star.glint = true;
+          glints += 1;
+        }
+        return star;
+      });
+    };
+
+    const draw = (now) => {
+      const time = now / 1000;
+      const dt = last ? Math.min(64, now - last) : 16;
+      last = now;
+      const scrolled = window.scrollY;
+      const pace = now ? Math.abs(scrolled - lastScroll) / dt : 0;
+      lastScroll = scrolled;
+      streak += (Math.min(pace * 7, 16) - streak) * 0.18;
+
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      ctx.lineCap = 'round';
+
+      const span = height + 40;   // stars wrap just off screen, so the field never runs out
+      const linked = [];
+      for (const star of stars) {
+        const x = star.x * width;
+        const travel = scrolled * (0.05 + 0.24 * star.depth);
+        const y = ((((star.y * span - travel) % span) + span) % span) - 20;
+        star.sx = x;
+        star.sy = y;
+        const twinkle = 0.62 + 0.26 * Math.sin(time * star.speed + star.phase) + 0.12 * Math.sin(time * star.speed * 2.7 + star.phase * 1.7);
+        let alpha = star.alpha * twinkle;
+        let size = star.size;
+
+        if (pointer.inside) {
+          const distance = Math.hypot(x - pointer.x, y - pointer.y);
+          if (distance < REACH) {
+            const nearness = 1 - distance / REACH;
+            alpha = Math.min(1, alpha + nearness * 0.45);
+            size *= 1 + nearness * 0.5;
+            linked.push({ star, nearness });
+          }
+        }
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = star.depth > 0.6 ? near : far;
+        if (streak > 1.5) {
+          ctx.strokeStyle = ctx.fillStyle;
+          ctx.lineWidth = size * 1.1;
+          ctx.beginPath();
+          ctx.moveTo(x, y - streak * star.depth);
+          ctx.lineTo(x, y + streak * star.depth);
+          ctx.stroke();
+          continue;
+        }
+        if (star.bright) {
+          const spread = size * 8;
+          ctx.drawImage(halo, x - spread / 2, y - spread / 2, spread, spread);
+          if (star.glint) {
+            const arm = size * (4.5 + 2 * Math.sin(time * 0.9 + star.phase));
+            ctx.globalAlpha = alpha * 0.5;
+            ctx.strokeStyle = near;
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x - arm, y);
+            ctx.lineTo(x + arm, y);
+            ctx.moveTo(x, y - arm);
+            ctx.lineTo(x, y + arm);
+            ctx.stroke();
+          }
+        } else {
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, 6.2832);
+          ctx.fill();
+        }
+      }
+
+      // A patch of the hero's grid shows under the pointer and moves with the page.
+      if (pointer.inside && streak <= 1.5) {
+        const glow = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, GRID_REACH);
+        glow.addColorStop(0, 'rgba(156, 194, 255, 0.2)');
+        glow.addColorStop(1, 'rgba(156, 194, 255, 0)');
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = glow;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const firstX = Math.ceil((pointer.x - GRID_REACH - width / 2) / GRID) * GRID + width / 2;
+        for (let gx = firstX; gx < pointer.x + GRID_REACH; gx += GRID) {
+          ctx.moveTo(Math.round(gx) + 0.5, pointer.y - GRID_REACH);
+          ctx.lineTo(Math.round(gx) + 0.5, pointer.y + GRID_REACH);
+        }
+        const firstY = Math.ceil((pointer.y - GRID_REACH + scrolled) / GRID) * GRID - scrolled;
+        for (let gy = firstY; gy < pointer.y + GRID_REACH; gy += GRID) {
+          ctx.moveTo(pointer.x - GRID_REACH, Math.round(gy) + 0.5);
+          ctx.lineTo(pointer.x + GRID_REACH, Math.round(gy) + 0.5);
+        }
+        ctx.stroke();
+      }
+
+      if (linked.length && streak <= 1.5) {
+        linked.sort((a, b) => b.nearness - a.nearness);
+        const group = linked.slice(0, 10);
+        ctx.strokeStyle = far;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < group.length; i += 1) {
+          const a = group[i];
+          ctx.globalAlpha = a.nearness * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(pointer.x, pointer.y);
+          ctx.lineTo(a.star.sx, a.star.sy);
+          ctx.stroke();
+          for (let k = i + 1; k < group.length; k += 1) {
+            const b = group[k];
+            const gap = Math.hypot(a.star.sx - b.star.sx, a.star.sy - b.star.sy);
+            if (gap > 130) continue;
+            ctx.globalAlpha = Math.min(a.nearness, b.nearness) * (1 - gap / 130) * 0.6;
+            ctx.beginPath();
+            ctx.moveTo(a.star.sx, a.star.sy);
+            ctx.lineTo(b.star.sx, b.star.sy);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // A spark in the empty margin beside the text, never across the text itself.
+      if (!shot && now > nextShot && now > 0 && margin >= 110) {
+        const travel = (margin - 34) / DIR_X;
+        const left = Math.random() < 0.5;
+        shot = { x: left ? 14 : width - margin + 20, y: height * (0.2 + Math.random() * 0.65), travel, age: 0, life: 800 + Math.random() * 500, tail: Math.min(travel * 0.6, 120) };
+      }
+      if (shot) {
+        shot.age += dt;
+        const k = shot.age / shot.life;
+        if (k >= 1) {
+          shot = null;
+          nextShot = now + 4500 + Math.random() * 6500;
+        } else {
+          const gone = shot.travel * k;
+          const headX = shot.x + DIR_X * gone;
+          const headY = shot.y + DIR_Y * gone;
+          const length = shot.tail * Math.min(1, k * 4);
+          const tailX = headX - DIR_X * length;
+          const tailY = headY - DIR_Y * length;
+          const gradient = ctx.createLinearGradient(tailX, tailY, headX, headY);
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          gradient.addColorStop(1, '#FFFFFF');
+          ctx.globalAlpha = Math.sin(k * Math.PI) * 0.8;
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(headX, headY);
+          ctx.stroke();
+          ctx.drawImage(halo, headX - 8, headY - 8, 16, 16);
+        }
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    build();
+    return { draw, build, pointer };
+  };
+
+  const backdrop = makeBackdrop();
+  if (backdrop) {
+    window.addEventListener('resize', () => {
+      backdrop.build();
+      if (reduceMotion) backdrop.draw(0);
+    }, { passive: true });
+    if (reduceMotion) {
+      backdrop.draw(0);   // a still field
+    } else {
+      if (finePointer) {
+        window.addEventListener('pointermove', (event) => {
+          backdrop.pointer.x = event.clientX;
+          backdrop.pointer.y = event.clientY;
+          backdrop.pointer.inside = true;
+        }, { passive: true });
+        root.addEventListener('pointerleave', () => { backdrop.pointer.inside = false; });
+      }
+      // It draws only while something below the top of the page is on screen:
+      // behind the hero it could not be seen anyway.
+      let showing = false;
+      watchScroll(() => {
+        const show = !sky || sky.getBoundingClientRect().bottom < scroll.viewH - 1;
+        if (show === showing) return;
+        showing = show;
+        if (show) startTask(backdrop.draw);
+        else stopTask(backdrop.draw);
+      });
     }
   }
 

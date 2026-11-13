@@ -89,7 +89,7 @@ The site is a folder of static files, so any static host will serve it as is: Ve
 | Token | Value | Used for |
 |---|---|---|
 | `--bg` | `#04050A` | Page background (open space) |
-| `--bg-deep` | `#060914` | Inside the ring: the loops and booking sections, footer |
+| `--bg-deep` | `#060914` | Inside the ring: the loops and booking sections, the inner pages, footer |
 | `--text` | `#F4F6FB` | Headings |
 | `--body` | `#B4BDD4` | Body text |
 | `--muted` | `#8A95B2` | Small labels, footer |
@@ -136,6 +136,11 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 
 **The loop calculator**
 - On the home page, the visitor sets how many people do a task, how long it takes and how often. A ring fills to show how much of one person's working year that is, the hours count up to the new figure, and a button carries the numbers into the booking form.
+
+**Behind the rest of the page**
+- A quieter sky sits behind every section below the top of each page: fewer, dimmer stars than the hero's. As the page scrolls, the near ones move further than the far ones, so the content seems to pass over a deep field.
+- Stars near the pointer link into a constellation, and a patch of the hero's grid lights up under it.
+- On wide screens a spark now and then crosses the empty margin beside the text, on the same heading as the beam.
 
 **Always running further down the page**
 - Lights travel along the horizon above the booking form, and along the same horizon at the top of every inner page.

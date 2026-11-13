@@ -150,8 +150,11 @@
   const hero = document.querySelector('.hero');
   const sky = hero || document.querySelector('.pagehead');
 
-  // Stars drift behind the headline, shift with the pointer, and now and then
-  // one shoots across in the same direction as the beam.
+  // The sky. Stars sit at three depths, so nearer ones move more with the
+  // pointer and with the page. The brightest have a soft halo and a glint.
+  // Stars near the pointer link up into a small constellation, fast scrolling
+  // stretches every star into a streak, and now and then one shoots across in
+  // the same direction as the beam.
   const makeStars = () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext ? canvas.getContext('2d') : null;
@@ -164,7 +167,10 @@
     const far = token('--sky', '#9CC2FF');
     const DIR_X = 0.9703;   // the beam's heading, so shooting stars echo it
     const DIR_Y = -0.2419;
-    const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+    const REACH = 150;      // px: how far from the pointer stars join the constellation
+    // tx/ty: where the pointer is across the sky, from -0.5 to 0.5 (drives the parallax).
+    // px/py: the same position in pixels (drives the constellation).
+    const pointer = { x: 0, y: 0, tx: 0, ty: 0, px: 0, py: 0, inside: false };
     let width = 0;
     let height = 0;
     let ratio = 1;
@@ -173,6 +179,21 @@
     let shot = null;
     let nextShot = performance.now() + 2600;
     let last = 0;
+    let lastScroll = window.scrollY;
+    let streak = 0;         // px: how far the stars are stretched by scrolling
+
+    // One soft dot of light, drawn once and stamped wherever a bright star needs a halo.
+    const halo = document.createElement('canvas');
+    halo.width = 64;
+    halo.height = 64;
+    const haloCtx = halo.getContext('2d');
+    const glowFill = haloCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    glowFill.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    glowFill.addColorStop(0.16, 'rgba(220, 235, 255, 0.6)');
+    glowFill.addColorStop(0.5, 'rgba(120, 160, 255, 0.13)');
+    glowFill.addColorStop(1, 'rgba(120, 160, 255, 0)');
+    haloCtx.fillStyle = glowFill;
+    haloCtx.fillRect(0, 0, 64, 64);
 
     const build = () => {
       width = sky.clientWidth;
@@ -182,16 +203,30 @@
       canvas.height = Math.round(height * ratio);
       const copy = sky.querySelector('.hero__copy > *');
       clearTop = copy ? copy.getBoundingClientRect().top - sky.getBoundingClientRect().top : 0;
-      const count = clamp(Math.round((width * height) / 8000), 50, 200);
-      stars = Array.from({ length: count }, () => ({
-        x: Math.random(),
-        y: Math.random(),
-        depth: 0.25 + Math.random() * 0.75,
-        size: 0.6 + Math.random() * 1.1,
-        alpha: 0.35 + Math.random() * 0.6,
-        phase: Math.random() * 6.283,
-        speed: 0.4 + Math.random() * 1.4,
-      }));
+      const count = clamp(Math.round((width * height) / 6200), 70, 260);
+      let glints = 0;
+      stars = Array.from({ length: count }, () => {
+        const depth = 0.2 + Math.random() * 0.8;
+        const bright = depth > 0.86;
+        const star = {
+          x: Math.random(),
+          y: Math.random(),
+          depth,
+          bright,
+          glint: false,
+          size: bright ? 1.2 + Math.random() * 0.9 : 0.45 + depth * (0.5 + Math.random() * 0.7),
+          alpha: bright ? 0.75 + Math.random() * 0.25 : 0.2 + depth * (0.25 + Math.random() * 0.45),
+          phase: Math.random() * 6.283,
+          speed: 0.4 + Math.random() * 1.4,
+          sx: 0,   // where it was last drawn, for the constellation
+          sy: 0,
+        };
+        if (bright && glints < 7 && Math.random() < 0.4) {
+          star.glint = true;
+          glints += 1;
+        }
+        return star;
+      });
     };
 
     const draw = (now) => {
@@ -201,18 +236,97 @@
       pointer.x += (pointer.tx - pointer.x) * 0.06;
       pointer.y += (pointer.ty - pointer.y) * 0.06;
 
+      // Scrolling stretches the stars; the stretch eases in and out.
+      const scrolled = window.scrollY;
+      const pace = now ? Math.abs(scrolled - lastScroll) / dt : 0;   // px per ms
+      lastScroll = scrolled;
+      streak += (Math.min(pace * 10, 26) - streak) * 0.18;
+
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, width, height);
+      ctx.lineCap = 'round';
 
+      const linked = [];
       for (const star of stars) {
         const drift = time * 5 * star.depth;
-        const x = ((((star.x * width - drift) % width) + width) % width) - pointer.x * 30 * star.depth;
-        const y = star.y * height - pointer.y * 20 * star.depth;
-        ctx.globalAlpha = star.alpha * (0.6 + 0.4 * Math.sin(time * star.speed + star.phase));
-        ctx.fillStyle = star.depth > 0.75 ? near : far;
-        ctx.beginPath();
-        ctx.arc(x, y, star.size * star.depth, 0, 6.2832);
-        ctx.fill();
+        const x = ((((star.x * width - drift) % width) + width) % width) - pointer.x * 44 * star.depth;
+        const y = star.y * height - pointer.y * 28 * star.depth + scrolled * 0.1 * (1 - star.depth);
+        star.sx = x;
+        star.sy = y;
+        // Two slow waves of different lengths, so the twinkle never looks regular.
+        const twinkle = 0.62 + 0.26 * Math.sin(time * star.speed + star.phase) + 0.12 * Math.sin(time * star.speed * 2.7 + star.phase * 1.7);
+        let alpha = star.alpha * twinkle;
+        let size = star.size;
+
+        if (pointer.inside) {
+          const dx = x - pointer.px;
+          const dy = y - pointer.py;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < REACH) {
+            const nearness = 1 - distance / REACH;
+            alpha = Math.min(1, alpha + nearness * 0.5);
+            size *= 1 + nearness * 0.6;
+            linked.push({ star, nearness });
+          }
+        }
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = star.depth > 0.6 ? near : far;
+        if (streak > 1.5) {
+          ctx.strokeStyle = ctx.fillStyle;
+          ctx.lineWidth = size * 1.2;
+          ctx.beginPath();
+          ctx.moveTo(x, y - streak * star.depth);
+          ctx.lineTo(x, y + streak * star.depth);
+          ctx.stroke();
+          continue;
+        }
+        if (star.bright) {
+          const spread = size * 9;
+          ctx.drawImage(halo, x - spread / 2, y - spread / 2, spread, spread);
+          if (star.glint) {
+            const arm = size * (5 + 2.5 * Math.sin(time * 0.9 + star.phase));
+            ctx.globalAlpha = alpha * 0.55;
+            ctx.strokeStyle = near;
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x - arm, y);
+            ctx.lineTo(x + arm, y);
+            ctx.moveTo(x, y - arm);
+            ctx.lineTo(x, y + arm);
+            ctx.stroke();
+          }
+        } else {
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, 6.2832);
+          ctx.fill();
+        }
+      }
+
+      // The constellation: the nearest stars link to the pointer and to each other.
+      if (linked.length && streak <= 1.5) {
+        linked.sort((a, b) => b.nearness - a.nearness);
+        const group = linked.slice(0, 12);
+        ctx.strokeStyle = far;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < group.length; i += 1) {
+          const a = group[i];
+          ctx.globalAlpha = a.nearness * 0.6;
+          ctx.beginPath();
+          ctx.moveTo(pointer.px, pointer.py);
+          ctx.lineTo(a.star.sx, a.star.sy);
+          ctx.stroke();
+          for (let k = i + 1; k < group.length; k += 1) {
+            const b = group[k];
+            const gap = Math.hypot(a.star.sx - b.star.sx, a.star.sy - b.star.sy);
+            if (gap > 120) continue;
+            ctx.globalAlpha = Math.min(a.nearness, b.nearness) * (1 - gap / 120) * 0.8;
+            ctx.beginPath();
+            ctx.moveTo(a.star.sx, a.star.sy);
+            ctx.lineTo(b.star.sx, b.star.sy);
+            ctx.stroke();
+          }
+        }
       }
 
       // Shooting stars keep to open sky so they never run through the text:
@@ -250,11 +364,11 @@
           ctx.globalAlpha = Math.sin(k * Math.PI);
           ctx.strokeStyle = gradient;
           ctx.lineWidth = 1.5;
-          ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(tailX, tailY);
           ctx.lineTo(headX, headY);
           ctx.stroke();
+          ctx.drawImage(halo, headX - 9, headY - 9, 18, 18);
         }
       }
       ctx.globalAlpha = 1;
@@ -267,7 +381,7 @@
         if (reduceMotion) draw(0);
       }).observe(sky);
     }
-    return { draw, pointer };
+    return { draw, pointer, canvas };
   };
 
   // The ring spins faster while the page is being scrolled, then settles. A
@@ -342,6 +456,10 @@
         if (stars) {
           stars.pointer.tx = x;
           stars.pointer.ty = y;
+          const box = stars.canvas.getBoundingClientRect();   // the canvas shifts a little as the page scrolls
+          stars.pointer.px = event.clientX - box.left;
+          stars.pointer.py = event.clientY - box.top;
+          stars.pointer.inside = true;
         }
       });
       sky.addEventListener('pointerleave', () => {
@@ -352,6 +470,7 @@
         if (stars) {
           stars.pointer.tx = 0;
           stars.pointer.ty = 0;
+          stars.pointer.inside = false;
         }
       });
     }
@@ -429,10 +548,12 @@
     });
   }
 
-  // --- How we backsolve: the line follows the scroll ---------------------------
+  // --- How we backsolve: the line across the three steps -------------------------
   // CSS reads --t (0 to 1) for the lit line and the light at its tip; each step
-  // lights as the tip reaches it. On phones the steps stack, so each one simply
-  // lights when it comes into view.
+  // lights as the tip reaches it. On the home page the line follows the scroll.
+  // Where the list sits at the top of a page (data-track="timed") it runs once
+  // on its own instead. On phones the steps stack, so each one simply lights
+  // when it comes into view.
   const track = document.querySelector('[data-track]');
   if (track) {
     const steps = Array.from(track.querySelectorAll('.track__step'));
@@ -446,6 +567,13 @@
       head.setAttribute('role', 'presentation');
       track.appendChild(head);
       const narrow = window.matchMedia('(max-width: 760px)');
+      const timed = track.dataset.track === 'timed' && hasObserver;
+      const setProgress = (t) => {
+        track.style.setProperty('--t', t.toFixed(4));
+        head.style.opacity = t > 0.005 && t < 0.995 ? '1' : '0';
+        steps.forEach((step, i) => step.classList.toggle('is-lit', t >= i / steps.length + 0.02));
+      };
+
       watchScroll(() => {
         if (narrow.matches) {
           steps.forEach((step) => {
@@ -453,11 +581,25 @@
           });
           return;
         }
-        const t = clamp((scroll.viewH * 0.82 - track.getBoundingClientRect().top) / (scroll.viewH * 0.42), 0, 1);
-        track.style.setProperty('--t', t.toFixed(4));
-        head.style.opacity = t > 0.005 && t < 0.995 ? '1' : '0';
-        steps.forEach((step, i) => step.classList.toggle('is-lit', t >= i / steps.length + 0.02));
+        if (timed) return;
+        setProgress(clamp((scroll.viewH * 0.82 - track.getBoundingClientRect().top) / (scroll.viewH * 0.42), 0, 1));
       });
+
+      if (timed) {
+        let began = 0;
+        const run = (now) => {
+          if (!began) began = now;
+          const t = clamp((now - began) / 1900, 0, 1);
+          if (!narrow.matches) setProgress(t);
+          if (t >= 1) stopTask(run);
+        };
+        const seen = new IntersectionObserver((entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          seen.disconnect();
+          window.setTimeout(() => startTask(run), 700);
+        }, { threshold: 0.2 });
+        seen.observe(track);
+      }
     }
   }
 

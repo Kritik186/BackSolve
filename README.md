@@ -1,6 +1,6 @@
 # BackSolve AI — website
 
-Marketing site for BackSolve AI, in the "Orbit" design: a home page, a Use cases page and a Services page. Plain HTML, CSS and JavaScript: no framework, no build step, no dependencies.
+Marketing site for BackSolve AI, in the "Orbit" design: a home page, plus Use cases, Services and How it works pages. Plain HTML, CSS and JavaScript: no framework, no build step, no dependencies.
 
 > Stuck in a loop? We backsolve the way out.
 
@@ -26,7 +26,8 @@ python3 -m http.server 8000
 ```
 index.html          Home page
 use-cases.html      Ten example use cases, with a filter by kind of firm
-services.html       The Loop Audit, build sprints and the retainer in detail
+services.html       The Loop Audit, build sprints and next projects in detail
+how-it-works.html   The three steps in detail, and what we need from the client
 css/styles.css      Design tokens (colours, type), layout, components, motion
 js/main.js          All animation and behaviour, the form, and CONFIG
 assets/favicon.svg  Browser tab icon
@@ -38,15 +39,16 @@ CLAUDE.md           Project notes for Claude Code
 
 ### 1. Fill in the placeholders
 
-Everything that is not yet known is written in CAPITALS inside [SQUARE BRACKETS] in the three `.html` files, usually with a `TODO` comment above it. Search for `[` to find them all.
+Everything that is not yet known is written in CAPITALS inside [SQUARE BRACKETS] in the four `.html` files, usually with a `TODO` comment above it. Search for `[` to find them all.
 
 | Section | What to fill in |
 |---|---|
 | The Loop Audit | Audit length and price |
 | Why BackSolve AI | The tools you work in, and your data promise |
 | Questions | Time needed from the client's team, your data policy, your price, the tools you support |
-| Services page | Audit length and price, sprint length, monthly fee, notice period, how often you review progress, what the retainer includes, time needed from the client |
-| Footer (all three pages) | Email, LinkedIn and privacy page links |
+| Services page | Audit length and price, sprint length, time needed from the client, what happens if something you built stops working, what support is included after a build |
+| How it works page | Time needed from the client, your data policy, audit length and price |
+| Footer (every page) | Email, LinkedIn and privacy page links |
 
 ### 2. Connect the "Book a call" buttons and the form
 
@@ -59,13 +61,14 @@ There is no server behind the form. If you would rather collect submissions with
 
 ### 3. Check every claim
 
-- The team section says the engineers come from Bain & Company and J.P. Morgan. Keep it only if that is true of the people who will do the work.
+- The team section says the engineers come from companies like J.P. Morgan, Goldman Sachs and Bain & Company, and that dedicated finance professionals work with you. Prospects can check this on LinkedIn, so keep it only while it is true of the people who do the work.
+- The Services page promises "Fixed price per project" and "No monthly commitment" for follow-on work. Keep them only if you mean them.
 - There are no testimonials, client logos or results numbers on the site. Add them only when they are real.
 - The ten use cases are examples of what you build, and the page says so. Check that each one is something you are willing to sell. When a client agrees to share a real story, add it to `use-cases.html` (there is a `TODO` comment marking the spot).
 
 ### 4. Confirm the logo
 
-The mark is a loop with a line leaving it, drawn as inline SVG next to the name in the header and the footer of every page. The same shape is in `assets/favicon.svg` and `assets/logo.svg`. To change the logo, replace it in the header and footer of all three pages and in those two files.
+The mark is a loop with a line leaving it, drawn as inline SVG next to the name in the header and the footer of every page. The same shape is in `assets/favicon.svg` and `assets/logo.svg`. To change the logo, replace it in the header and footer of every page and in those two files.
 
 ### 5. Let search engines in
 
@@ -103,11 +106,12 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 - The headline arrives word by word, the mark in the header draws itself, and a beam draws out of the ring to "the way out".
 
 **Always running in the hero**
-- Stars drift and twinkle behind the headline. On wide screens one shoots across the open sky every few seconds.
+- Stars sit at three depths and twinkle behind the headline; the brightest have a soft halo and a glint. On wide screens one shoots across the open sky every few seconds.
 - A ring of "copy, paste, repeat" turns slowly with lights travelling round it. Each time a light passes the start of the beam, a spark leaves the ring and runs along it.
 
 **Following the scroll**
 - Scrolling away from the hero flies into the ring: the headline lifts and fades, the ring grows, the stars lag behind.
+- Fast scrolling stretches the stars into short streaks.
 - The ring spins faster while the page is moving, then settles. The header mark spins too and comes to rest upright.
 - In "How we backsolve", a light runs along the line as you scroll and each step lights as it arrives.
 - The team headline lights up word by word.
@@ -115,7 +119,7 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 - A progress bar at the top fills as the page scrolls, and the header link for the section on screen is highlighted.
 
 **Following the pointer**
-- A soft light and the stars shift with the pointer across the hero.
+- A soft light and the stars shift with the pointer across the hero, nearer stars more than far ones. Stars near the pointer link up into a small constellation.
 - The main buttons lean toward the pointer. Cards tilt toward it and a highlight follows it.
 - Hovering the name in the header fires the line out of the loop again.
 
@@ -123,11 +127,12 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 - Each page opens with the same stars and word-by-word headline.
 - On Use cases, the filter brings the matching examples in one after another, and the arrow from "The loop today" to "The way out" draws as each row arrives.
 - On Services, the summary of each service stays in view while its details scroll past.
+- On How it works, the line across the three steps runs once on its own when the page opens.
 - On small screens the menu button opens and closes the links panel.
 
 **Small touches**
 - The dot on each loop card keeps circling.
-- In "After the audit", the highlight steps through Audit, Build sprints and Retainer.
+- In "After the audit", the highlight steps through Audit, Build sprints and Next projects.
 - Answers in the questions section open and close smoothly.
 - The horizon above the booking form brightens while someone is typing in it.
 

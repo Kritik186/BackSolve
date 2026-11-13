@@ -150,6 +150,22 @@
   const hero = document.querySelector('.hero');
   const sky = hero || document.querySelector('.pagehead');
 
+  // One soft dot of light, drawn once and stamped wherever a bright star needs a halo.
+  const makeHalo = () => {
+    const halo = document.createElement('canvas');
+    halo.width = 64;
+    halo.height = 64;
+    const haloCtx = halo.getContext('2d');
+    const glowFill = haloCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    glowFill.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    glowFill.addColorStop(0.16, 'rgba(220, 235, 255, 0.6)');
+    glowFill.addColorStop(0.5, 'rgba(120, 160, 255, 0.13)');
+    glowFill.addColorStop(1, 'rgba(120, 160, 255, 0)');
+    haloCtx.fillStyle = glowFill;
+    haloCtx.fillRect(0, 0, 64, 64);
+    return halo;
+  };
+
   // The sky. Stars sit at three depths, so nearer ones move more with the
   // pointer and with the page. The brightest have a soft halo and a glint.
   // Stars near the pointer link up into a small constellation, fast scrolling
@@ -182,18 +198,7 @@
     let lastScroll = window.scrollY;
     let streak = 0;         // px: how far the stars are stretched by scrolling
 
-    // One soft dot of light, drawn once and stamped wherever a bright star needs a halo.
-    const halo = document.createElement('canvas');
-    halo.width = 64;
-    halo.height = 64;
-    const haloCtx = halo.getContext('2d');
-    const glowFill = haloCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    glowFill.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    glowFill.addColorStop(0.16, 'rgba(220, 235, 255, 0.6)');
-    glowFill.addColorStop(0.5, 'rgba(120, 160, 255, 0.13)');
-    glowFill.addColorStop(1, 'rgba(120, 160, 255, 0)');
-    haloCtx.fillStyle = glowFill;
-    haloCtx.fillRect(0, 0, 64, 64);
+    const halo = makeHalo();
 
     const build = () => {
       width = sky.clientWidth;
@@ -506,6 +511,262 @@
     }
   }
 
+  // --- Backdrop: a quieter sky behind the rest of the page ------------------------
+  // One canvas, fixed behind every section below the top of the page. It is the
+  // hero's sky turned down: fewer and dimmer stars. Scrolling moves the near
+  // ones further than the far ones, so the page seems to pass over a deep
+  // field. Stars near the pointer link into a constellation, and on wide
+  // screens a spark now and then crosses the empty margin beside the text, on
+  // the same heading as the beam. CSS keeps it behind everything (z-index -1).
+  const makeBackdrop = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+    if (!ctx) return null;
+    canvas.className = 'backdrop';
+    canvas.setAttribute('aria-hidden', 'true');
+    document.body.insertBefore(canvas, document.body.firstChild);
+
+    const halo = makeHalo();
+    const near = token('--ice', '#DCEBFF');
+    const far = token('--sky', '#9CC2FF');
+    const DIR_X = 0.9703;   // the beam's heading
+    const DIR_Y = -0.2419;
+    const REACH = 140;      // px: how far from the pointer stars join the constellation
+    const GRID = 72;        // px: the hero grid's spacing
+    const GRID_REACH = 250; // px: how far from the pointer the grid shows
+    const pointer = { x: 0, y: 0, inside: false };
+    let width = 0;
+    let height = 0;
+    let ratio = 1;
+    let stars = [];
+    let margin = 0;         // px of empty page either side of the text column
+    let shot = null;
+    let nextShot = performance.now() + 5000;
+    let last = 0;
+    let lastScroll = window.scrollY;
+    let streak = 0;
+
+    const build = () => {
+      const widthChanged = window.innerWidth !== width;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      margin = (width - Math.min(width - 48, parseFloat(token('--wrap', '1120')) || 1120)) / 2;
+      // Phones resize whenever the address bar slides away. Keep the same stars
+      // then, or the whole sky would jump.
+      if (stars.length && !widthChanged) return;
+      const count = clamp(Math.round((width * height) / 8600), 40, 190);
+      let glints = 0;
+      stars = Array.from({ length: count }, () => {
+        const depth = 0.15 + Math.random() * 0.85;
+        const bright = depth > 0.9;
+        const star = {
+          x: Math.random(),
+          y: Math.random(),
+          depth,
+          bright,
+          glint: false,
+          size: bright ? 1.1 + Math.random() * 0.7 : 0.4 + depth * (0.4 + Math.random() * 0.6),
+          alpha: bright ? 0.6 + Math.random() * 0.3 : 0.16 + depth * (0.2 + Math.random() * 0.36),
+          phase: Math.random() * 6.283,
+          speed: 0.4 + Math.random() * 1.2,
+          sx: 0,
+          sy: 0,
+        };
+        if (bright && glints < 5 && Math.random() < 0.45) {
+          star.glint = true;
+          glints += 1;
+        }
+        return star;
+      });
+    };
+
+    const draw = (now) => {
+      const time = now / 1000;
+      const dt = last ? Math.min(64, now - last) : 16;
+      last = now;
+      const scrolled = window.scrollY;
+      const pace = now ? Math.abs(scrolled - lastScroll) / dt : 0;
+      lastScroll = scrolled;
+      streak += (Math.min(pace * 7, 16) - streak) * 0.18;
+
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      ctx.lineCap = 'round';
+
+      const span = height + 40;   // stars wrap just off screen, so the field never runs out
+      const linked = [];
+      for (const star of stars) {
+        const x = star.x * width;
+        const travel = scrolled * (0.05 + 0.24 * star.depth);
+        const y = ((((star.y * span - travel) % span) + span) % span) - 20;
+        star.sx = x;
+        star.sy = y;
+        const twinkle = 0.62 + 0.26 * Math.sin(time * star.speed + star.phase) + 0.12 * Math.sin(time * star.speed * 2.7 + star.phase * 1.7);
+        let alpha = star.alpha * twinkle;
+        let size = star.size;
+
+        if (pointer.inside) {
+          const distance = Math.hypot(x - pointer.x, y - pointer.y);
+          if (distance < REACH) {
+            const nearness = 1 - distance / REACH;
+            alpha = Math.min(1, alpha + nearness * 0.45);
+            size *= 1 + nearness * 0.5;
+            linked.push({ star, nearness });
+          }
+        }
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = star.depth > 0.6 ? near : far;
+        if (streak > 1.5) {
+          ctx.strokeStyle = ctx.fillStyle;
+          ctx.lineWidth = size * 1.1;
+          ctx.beginPath();
+          ctx.moveTo(x, y - streak * star.depth);
+          ctx.lineTo(x, y + streak * star.depth);
+          ctx.stroke();
+          continue;
+        }
+        if (star.bright) {
+          const spread = size * 8;
+          ctx.drawImage(halo, x - spread / 2, y - spread / 2, spread, spread);
+          if (star.glint) {
+            const arm = size * (4.5 + 2 * Math.sin(time * 0.9 + star.phase));
+            ctx.globalAlpha = alpha * 0.5;
+            ctx.strokeStyle = near;
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x - arm, y);
+            ctx.lineTo(x + arm, y);
+            ctx.moveTo(x, y - arm);
+            ctx.lineTo(x, y + arm);
+            ctx.stroke();
+          }
+        } else {
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, 6.2832);
+          ctx.fill();
+        }
+      }
+
+      // A patch of the hero's grid shows under the pointer and moves with the page.
+      if (pointer.inside && streak <= 1.5) {
+        const glow = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, GRID_REACH);
+        glow.addColorStop(0, 'rgba(156, 194, 255, 0.2)');
+        glow.addColorStop(1, 'rgba(156, 194, 255, 0)');
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = glow;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const firstX = Math.ceil((pointer.x - GRID_REACH - width / 2) / GRID) * GRID + width / 2;
+        for (let gx = firstX; gx < pointer.x + GRID_REACH; gx += GRID) {
+          ctx.moveTo(Math.round(gx) + 0.5, pointer.y - GRID_REACH);
+          ctx.lineTo(Math.round(gx) + 0.5, pointer.y + GRID_REACH);
+        }
+        const firstY = Math.ceil((pointer.y - GRID_REACH + scrolled) / GRID) * GRID - scrolled;
+        for (let gy = firstY; gy < pointer.y + GRID_REACH; gy += GRID) {
+          ctx.moveTo(pointer.x - GRID_REACH, Math.round(gy) + 0.5);
+          ctx.lineTo(pointer.x + GRID_REACH, Math.round(gy) + 0.5);
+        }
+        ctx.stroke();
+      }
+
+      if (linked.length && streak <= 1.5) {
+        linked.sort((a, b) => b.nearness - a.nearness);
+        const group = linked.slice(0, 10);
+        ctx.strokeStyle = far;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < group.length; i += 1) {
+          const a = group[i];
+          ctx.globalAlpha = a.nearness * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(pointer.x, pointer.y);
+          ctx.lineTo(a.star.sx, a.star.sy);
+          ctx.stroke();
+          for (let k = i + 1; k < group.length; k += 1) {
+            const b = group[k];
+            const gap = Math.hypot(a.star.sx - b.star.sx, a.star.sy - b.star.sy);
+            if (gap > 130) continue;
+            ctx.globalAlpha = Math.min(a.nearness, b.nearness) * (1 - gap / 130) * 0.6;
+            ctx.beginPath();
+            ctx.moveTo(a.star.sx, a.star.sy);
+            ctx.lineTo(b.star.sx, b.star.sy);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // A spark in the empty margin beside the text, never across the text itself.
+      if (!shot && now > nextShot && now > 0 && margin >= 110) {
+        const travel = (margin - 34) / DIR_X;
+        const left = Math.random() < 0.5;
+        shot = { x: left ? 14 : width - margin + 20, y: height * (0.2 + Math.random() * 0.65), travel, age: 0, life: 800 + Math.random() * 500, tail: Math.min(travel * 0.6, 120) };
+      }
+      if (shot) {
+        shot.age += dt;
+        const k = shot.age / shot.life;
+        if (k >= 1) {
+          shot = null;
+          nextShot = now + 4500 + Math.random() * 6500;
+        } else {
+          const gone = shot.travel * k;
+          const headX = shot.x + DIR_X * gone;
+          const headY = shot.y + DIR_Y * gone;
+          const length = shot.tail * Math.min(1, k * 4);
+          const tailX = headX - DIR_X * length;
+          const tailY = headY - DIR_Y * length;
+          const gradient = ctx.createLinearGradient(tailX, tailY, headX, headY);
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          gradient.addColorStop(1, '#FFFFFF');
+          ctx.globalAlpha = Math.sin(k * Math.PI) * 0.8;
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(headX, headY);
+          ctx.stroke();
+          ctx.drawImage(halo, headX - 8, headY - 8, 16, 16);
+        }
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    build();
+    return { draw, build, pointer };
+  };
+
+  const backdrop = makeBackdrop();
+  if (backdrop) {
+    window.addEventListener('resize', () => {
+      backdrop.build();
+      if (reduceMotion) backdrop.draw(0);
+    }, { passive: true });
+    if (reduceMotion) {
+      backdrop.draw(0);   // a still field
+    } else {
+      if (finePointer) {
+        window.addEventListener('pointermove', (event) => {
+          backdrop.pointer.x = event.clientX;
+          backdrop.pointer.y = event.clientY;
+          backdrop.pointer.inside = true;
+        }, { passive: true });
+        root.addEventListener('pointerleave', () => { backdrop.pointer.inside = false; });
+      }
+      // It draws only while something below the top of the page is on screen:
+      // behind the hero it could not be seen anyway.
+      let showing = false;
+      watchScroll(() => {
+        const show = !sky || sky.getBoundingClientRect().bottom < scroll.viewH - 1;
+        if (show === showing) return;
+        showing = show;
+        if (show) startTask(backdrop.draw);
+        else stopTask(backdrop.draw);
+      });
+    }
+  }
+
   // --- Buttons: the main buttons lean toward the pointer ----------------------
   if (finePointer && !reduceMotion) {
     document.querySelectorAll('.btn--light, .nav__cta').forEach((button) => {
@@ -528,24 +789,91 @@
     });
   }
 
-  // --- Cards: a highlight follows the pointer and the card tilts toward it ----
+  // --- Boxes: a light follows the pointer, and the cards tilt toward it ---------
+  // CSS reads --mx and --my: the cards glow under the pointer, every other box
+  // (panels, services, use cases, the form) lights its edge nearest to it, and
+  // the ruled lists light the rule above the row the pointer is on.
   if (finePointer) {
-    document.querySelectorAll('.card').forEach((card) => {
-      card.addEventListener('pointermove', (event) => {
-        const rect = card.getBoundingClientRect();
+    document.querySelectorAll('.card, .panel, .service, .case, .cta-band, .form, .reasons li, .faq__item').forEach((box) => {
+      const tilts = box.classList.contains('card');
+      box.addEventListener('pointermove', (event) => {
+        const rect = box.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
-        card.style.setProperty('--mx', `${x.toFixed(0)}px`);
-        card.style.setProperty('--my', `${y.toFixed(0)}px`);
-        if (reduceMotion) return;
-        card.style.setProperty('--ry', `${((x / rect.width - 0.5) * 8).toFixed(2)}deg`);
-        card.style.setProperty('--rx', `${((0.5 - y / rect.height) * 8).toFixed(2)}deg`);
+        box.style.setProperty('--mx', `${x.toFixed(0)}px`);
+        box.style.setProperty('--my', `${y.toFixed(0)}px`);
+        if (!tilts || reduceMotion) return;
+        box.style.setProperty('--ry', `${((x / rect.width - 0.5) * 8).toFixed(2)}deg`);
+        box.style.setProperty('--rx', `${((0.5 - y / rect.height) * 8).toFixed(2)}deg`);
       });
-      card.addEventListener('pointerleave', () => {
-        card.style.setProperty('--rx', '0deg');
-        card.style.setProperty('--ry', '0deg');
+      if (!tilts) return;
+      box.addEventListener('pointerleave', () => {
+        box.style.setProperty('--rx', '0deg');
+        box.style.setProperty('--ry', '0deg');
       });
     });
+  }
+
+  // --- Horizon: lights travel along the ring at the foot of the page -----------
+  // The same ring opens every inner page. The script adds the lights, so the
+  // markup stays identical in every file. They sit on the circle the rim is
+  // drawn on (centre 720,1480, radius 800) and CSS turns them, as in the hero.
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const horizonLights = Array.from(document.querySelectorAll('.horizon')).map((horizon) => {
+    const holder = document.createElement('div');
+    holder.className = 'horizon__lights';
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '-80 680 1600 1600');
+    svg.setAttribute('focusable', 'false');
+    for (let i = 0; i < 16; i += 1) {
+      const light = document.createElementNS(SVG_NS, 'g');
+      light.setAttribute('transform', `rotate(${(i * 22.5 + 7).toFixed(1)} 720 1480)`);
+      [['10', 'halo'], ['5.5', 'glow'], ['2.6', 'core']].forEach(([radius, part]) => {
+        const circle = document.createElementNS(SVG_NS, 'circle');
+        circle.setAttribute('cx', '720');
+        circle.setAttribute('cy', '680');
+        circle.setAttribute('r', radius);
+        circle.setAttribute('class', `horizon__light horizon__light--${part}`);
+        light.appendChild(circle);
+      });
+      svg.appendChild(light);
+    }
+    holder.appendChild(svg);
+    horizon.appendChild(holder);
+    if (hasObserver) {
+      new IntersectionObserver((entries) => {
+        entries.forEach((entry) => holder.classList.toggle('is-paused', !entry.isIntersecting));
+      }).observe(horizon);
+    }
+    return svg;
+  });
+
+  // --- Everything that turns, turns faster while the page scrolls ----------------
+  // The loop icons and the horizon lights are CSS animations. Scrolling speeds
+  // them up and they settle again, the same way the hero ring behaves.
+  if (!reduceMotion && document.documentElement.getAnimations) {
+    const named = (el, name) => (el.getAnimations ? el.getAnimations().find((animation) => animation.animationName === name) : null);
+    const turning = Array.from(document.querySelectorAll('.loopicon')).map((el) => named(el, 'spin'))
+      .concat(horizonLights.map((el) => named(el, 'orbit-spin')))
+      .filter(Boolean);
+    if (turning.length) {
+      let push = 0;     // how hard the last scroll pushed; fades each frame
+      let rate = 1;
+      const whirl = () => {
+        push *= 0.93;
+        rate += (1 + push - rate) * 0.14;
+        const settled = push < 0.03 && Math.abs(rate - 1) < 0.03;
+        if (settled) rate = 1;
+        turning.forEach((animation) => { animation.playbackRate = rate; });
+        if (settled) stopTask(whirl);
+      };
+      watchScroll(() => {
+        const speed = Math.min(Math.abs(scroll.velocity) * 6, 9);
+        if (speed < 0.4) return;
+        push = Math.max(push, speed);
+        startTask(whirl);
+      });
+    }
   }
 
   // --- What one loop costs -------------------------------------------------------
@@ -676,6 +1004,32 @@
         setProgress(clamp((scroll.viewH * 0.82 - track.getBoundingClientRect().top) / (scroll.viewH * 0.42), 0, 1));
       });
 
+      // Once the whole line is lit, a light runs along it again every few
+      // seconds for as long as the steps are on screen.
+      const pulse = document.createElement('li');
+      pulse.className = 'track__pulse';
+      pulse.setAttribute('aria-hidden', 'true');
+      pulse.setAttribute('role', 'presentation');
+      track.appendChild(pulse);
+      if (hasObserver && pulse.animate) {
+        let pulsing = 0;
+        const firePulse = () => {
+          if (narrow.matches || Number(track.style.getPropertyValue('--t')) < 0.999) return;
+          pulse.animate([
+            { opacity: 0, transform: 'translateX(0)' },
+            { opacity: 1, offset: 0.12 },
+            { opacity: 1, offset: 0.86 },
+            { opacity: 0, transform: `translateX(${track.offsetWidth}px)` },
+          ], { duration: 1900, easing: 'cubic-bezier(0.4, 0, 0.4, 1)' });
+        };
+        new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            window.clearInterval(pulsing);
+            pulsing = entry.isIntersecting ? window.setInterval(firePulse, 4200) : 0;
+          });
+        }, { threshold: 0.3 }).observe(track);
+      }
+
       if (timed) {
         let began = 0;
         const run = (now) => {
@@ -716,25 +1070,54 @@
     }, { threshold: 0.4 }).observe(path);
   }
 
-  // --- Team: the line lights up word by word as it scrolls into view ----------
-  const teamTitle = document.querySelector('.team .h2');
-  if (teamTitle && !reduceMotion) {
-    const words = teamTitle.textContent.trim().split(/\s+/).map((text) => {
-      const span = document.createElement('span');
-      span.className = 'glow-word';
-      span.textContent = text;
-      return span;
-    });
-    teamTitle.textContent = '';
-    words.forEach((span, i) => {
-      teamTitle.appendChild(span);
-      if (i < words.length - 1) teamTitle.appendChild(document.createTextNode(' '));
-    });
-    watchScroll(() => {
-      const q = clamp((scroll.viewH * 0.88 - teamTitle.getBoundingClientRect().top) / (scroll.viewH * 0.5), 0, 1);
-      words.forEach((span, i) => {
-        span.style.opacity = (0.22 + 0.78 * clamp(q * (words.length + 1) - i, 0, 1)).toFixed(3);
+  // --- Headlines light up word by word as they scroll into view ----------------
+  // Every section headline is split into words. Each word starts dim and
+  // brightens as the headline rises up the screen, and then stays lit.
+  if (!reduceMotion) {
+    const headlines = Array.from(document.querySelectorAll('.h2'))
+      .filter((heading) => heading.children.length === 0 && heading.textContent.trim())
+      .map((heading) => {
+        const words = heading.textContent.trim().split(/\s+/).map((text) => {
+          const span = document.createElement('span');
+          span.className = 'glow-word';
+          span.textContent = text;
+          return span;
+        });
+        heading.textContent = '';
+        words.forEach((span, i) => {
+          heading.appendChild(span);
+          if (i < words.length - 1) heading.appendChild(document.createTextNode(' '));
+        });
+        return { heading, words, lit: false };
       });
+    if (headlines.length) {
+      watchScroll(() => {
+        const atEnd = scroll.y >= root.scrollHeight - scroll.viewH - 2;
+        headlines.forEach((item) => {
+          if (item.lit) return;
+          const top = item.heading.getBoundingClientRect().top;
+          if (top > scroll.viewH * 1.1 && !atEnd) return;   // not on screen yet
+          const q = atEnd && top < scroll.viewH ? 1 : clamp((scroll.viewH * 0.9 - top) / (scroll.viewH * 0.36), 0, 1);
+          item.words.forEach((span, i) => {
+            span.style.opacity = (0.22 + 0.78 * clamp(q * (item.words.length + 1) - i, 0, 1)).toFixed(3);
+          });
+          if (q >= 1) item.lit = true;
+        });
+      });
+    }
+  }
+
+  // --- Team: the glow behind the words leans toward the pointer ------------------
+  const team = document.querySelector('.team');
+  if (team && finePointer && !reduceMotion) {
+    team.addEventListener('pointermove', (event) => {
+      const rect = team.getBoundingClientRect();
+      team.style.setProperty('--px', `${(((event.clientX - rect.left) / rect.width - 0.5) * 220).toFixed(0)}px`);
+      team.style.setProperty('--py', `${(((event.clientY - rect.top) / rect.height - 0.5) * 120).toFixed(0)}px`);
+    });
+    team.addEventListener('pointerleave', () => {
+      team.style.setProperty('--px', '0px');
+      team.style.setProperty('--py', '0px');
     });
   }
 

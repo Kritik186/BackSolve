@@ -7,14 +7,15 @@
   'use strict';
 
   // ---------------------------------------------------------------------
-  // CONFIG — fill these in before launch.
+  // CONFIG
   // ---------------------------------------------------------------------
   const CONFIG = {
     // Your business email. The contact form opens the visitor's mail app
     // with a pre-filled message to this address.
-    email: '',
+    email: 'loop@backsolveai.com',
     // Optional: a Cal.com / Calendly link. If set, every "Book a call"
     // button opens it in a new tab instead of scrolling to the form.
+    // Left empty on purpose: the owner wants the buttons to lead to the form.
     bookingUrl: '',
   };
 
@@ -1229,7 +1230,7 @@
       if (!form.reportValidity()) return;
 
       if (!CONFIG.email) {
-        if (status) status.textContent = 'This form is not connected yet. Add your email or booking link in js/main.js.';
+        if (status) status.textContent = 'This form is not connected yet. Add your email in js/main.js.';
         return;
       }
 

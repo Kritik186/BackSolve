@@ -48,7 +48,9 @@ The design is called "Orbit": a dark site where the loop is a glowing ring of "c
 
 ## Content rules
 
-- Text in [SQUARE BRACKETS] is a placeholder for a fact only the owner knows (price, audit length, tools, data policy, links). Never replace a placeholder with an invented value. Ask the owner.
+- Text in [SQUARE BRACKETS] is a placeholder for a fact only the owner knows. Two are left, both about the tools he works in. Never replace a placeholder with an invented value. Ask the owner.
+- The owner's terms, in his words, are on the site and must stay consistent wherever they appear: the audit takes one to two weeks depending on the work; the fee is fixed and agreed on the first call, with no figure shown; the audit needs about two hours a week from the client's team; sprint length depends on the task; fixes and support are included for 60 days after each build. Do not add a price, a set sprint length or a longer support period.
+- Contact is `loop@backsolveai.com`, in the footer of every page and in `CONFIG.email`. There is no LinkedIn link and no booking link because the owner asked for neither: do not add placeholders for them, and leave `CONFIG.bookingUrl` empty unless he supplies a link.
 - No testimonials, client logos, statistics or results numbers unless the owner supplies real ones.
 - The use cases are examples of what BackSolve AI builds, not client stories. Keep the line that says so until real case studies replace it, and never add invented results to them.
 - The team lines name J.P. Morgan, Goldman Sachs and Bain & Company ("among others") as past employers of the engineers, and say dedicated finance professionals work with the team. The owner supplied this wording. Do not add those firms' logos, and do not strengthen the claim further.
@@ -66,5 +68,5 @@ The design is called "Orbit": a dark site where the loop is a glowing ring of "c
 - Load the page once with reduced motion switched on: everything must be visible and nothing may move.
 - Scroll each page to the bottom and confirm no headline is left dim: every word of every `.h2` must end at full brightness.
 - Check the stars behind the page show in every section below the hero, including "Sound familiar?", the booking section and the body of each inner page, and that text over them is still easy to read.
-- Submit the form with `CONFIG.email` empty and confirm the "not connected" message appears.
+- Submit the form and confirm it opens a message addressed to `CONFIG.email`. With that value emptied, the "not connected" message must appear instead.
 - On the home page, move both calculator sliders and press each "How often" choice: the figure must equal people x hours x times a year (240, 48, 12 or 4), and "Bring this loop to the call" must fill the form's last box without overwriting anything already typed there.

@@ -158,6 +158,49 @@
       </div>
     </section>
 
+    <!-- What one loop costs. It works only on the visitor's own numbers, and it is
+         hidden when the script is off because it cannot add up without it. -->
+    <section class="section cost" id="cost">
+      <div class="wrap calc" id="calc" style="--share:0.15" data-reveal>
+        <div class="calc__inputs">
+          <h2 class="h2">What does one loop cost you?</h2>
+          <p class="sub">Think of the task your team repeats most, and put in your own numbers.</p>
+          <div class="dial">
+            <div class="dial__top"><label for="c-people">People who do it</label><output id="c-people-out" for="c-people">2</output></div>
+            <input id="c-people" type="range" min="1" max="20" step="1" value="2" style="--fill:5.3%">
+          </div>
+          <div class="dial">
+            <div class="dial__top"><label for="c-hours">Hours each person spends on it</label><output id="c-hours-out" for="c-hours">3</output></div>
+            <input id="c-hours" type="range" min="0.5" max="40" step="0.5" value="3" style="--fill:6.3%">
+          </div>
+          <fieldset class="often">
+            <legend>How often</legend>
+            <div class="often__set">
+              <label><input type="radio" name="often" value="240" data-say="every working day"><span>Every day</span></label>
+              <label><input type="radio" name="often" value="48" data-say="every week" checked><span>Every week</span></label>
+              <label><input type="radio" name="often" value="12" data-say="every month"><span>Every month</span></label>
+              <label><input type="radio" name="often" value="4" data-say="every quarter"><span>Every quarter</span></label>
+            </div>
+          </fieldset>
+        </div>
+        <div class="calc__result">
+          <!-- The ring is one person's working year. The lit part is what this loop takes of it. -->
+          <div class="calc__ring">
+            <svg viewBox="0 0 240 240" fill="none" aria-hidden="true" focusable="false">
+              <circle class="calc__base" cx="120" cy="120" r="104"/>
+              <circle class="calc__glow" pathLength="1" cx="120" cy="120" r="104" transform="rotate(-90 120 120)"/>
+              <circle class="calc__arc" pathLength="1" cx="120" cy="120" r="104" transform="rotate(-90 120 120)"/>
+              <g class="calc__bead"><circle cx="120" cy="16" r="11"/><circle cx="120" cy="16" r="4.5"/></g>
+            </svg>
+            <p class="calc__figure"><span class="calc__hours" id="c-total">288</span><span class="calc__unit">hours a year</span></p>
+          </div>
+          <p class="calc__line" id="c-line" role="status" aria-live="polite">That is 36 working days a year: 15% of one person's time.</p>
+          <a class="btn btn--light" href="#book" id="c-send">Bring this loop to the call</a>
+          <p class="note">Your numbers, not ours. A working year is counted as 48 weeks of 40 hours.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- How we backsolve -->
     <section class="section how" id="how">
       <div class="wrap">
@@ -236,8 +279,8 @@
           <li><h3 class="h3">Fixed price, fixed scope</h3><p>You know the cost before we start, for the audit and for every sprint after it.</p></li>
           <!-- TODO: list the tools you really work in -->
           <li><h3 class="h3">Built into your tools</h3><p>[LIST YOUR TOOLS: for example Excel, PowerPoint, email and your CRM.] No new platform to learn.</p></li>
-          <!-- TODO: only promise what you will actually do -->
-          <li><h3 class="h3">Your data stays yours</h3><p>[YOUR DATA PROMISE: for example an NDA before we see anything, and work done inside your own accounts.]</p></li>
+          <!-- These are promises. Keep them in step with the "Your data" section below and with data.html. -->
+          <li><h3 class="h3">Confidential by default</h3><p>An NDA before we see anything, and your data is never used to train an AI model. <a class="textlink" href="data.html">How we handle your data</a></p></li>
         </ul>
       </div>
     </section>
@@ -249,6 +292,27 @@
         <!-- Wording supplied by the owner. Keep it only while it is true of the people who do the work. -->
         <p class="lede">Our engineers come from companies like J.P. Morgan, Goldman Sachs and Bain &amp; Company, among others. They have done the work your team does, so they understand it before they automate it.</p>
         <p class="lede">We also work with dedicated finance professionals, who help us understand each task before we build.</p>
+      </div>
+    </section>
+
+    <!-- Your data. A standard set of commitments the owner asked for. Every line is a promise:
+         keep only the ones you keep, and keep the wording in step with data.html. -->
+    <section class="section data" id="data">
+      <div class="wrap">
+        <div class="panel" data-reveal>
+          <div class="panel__main">
+            <h2 class="h2">Your data stays yours.</h2>
+            <p class="sub">You would be trusting us with deal files and investor numbers. This is what we commit to, in writing, before we open any of them.</p>
+            <a class="btn btn--ghost" href="data.html">Read how we handle your data</a>
+          </div>
+          <ul class="checklist" data-stagger>
+            <li><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><circle cx="13" cy="13" r="12" stroke="#4D7CFF" stroke-opacity="0.55" stroke-width="1.5"/><path pathLength="1" d="M8 13.4 11.6 17 18.4 9.6" stroke="#DCEBFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>An NDA signed before you send us anything</span></li>
+            <li><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><circle cx="13" cy="13" r="12" stroke="#4D7CFF" stroke-opacity="0.55" stroke-width="1.5"/><path pathLength="1" d="M8 13.4 11.6 17 18.4 9.6" stroke="#DCEBFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Work done inside your systems where we can</span></li>
+            <li><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><circle cx="13" cy="13" r="12" stroke="#4D7CFF" stroke-opacity="0.55" stroke-width="1.5"/><path pathLength="1" d="M8 13.4 11.6 17 18.4 9.6" stroke="#DCEBFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Access you grant, and can switch off at any time</span></li>
+            <li><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><circle cx="13" cy="13" r="12" stroke="#4D7CFF" stroke-opacity="0.55" stroke-width="1.5"/><path pathLength="1" d="M8 13.4 11.6 17 18.4 9.6" stroke="#DCEBFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Your data never used to train an AI model</span></li>
+            <li><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><circle cx="13" cy="13" r="12" stroke="#4D7CFF" stroke-opacity="0.55" stroke-width="1.5"/><path pathLength="1" d="M8 13.4 11.6 17 18.4 9.6" stroke="#DCEBFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Our copies deleted when the work ends</span></li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -265,7 +329,7 @@
           </details>
           <details class="faq__item">
             <summary>How do you handle confidential data?</summary>
-            <p>[YOUR DATA POLICY: say exactly what you sign, where the work is done, and what never leaves the client's systems.]</p>
+            <p>We sign an NDA before you send us anything. Wherever we can, we work inside your own systems, with access you grant and can switch off. Your data is never used to train an AI model, and we delete our copies when the work ends. <a class="textlink" href="data.html">Read how we handle your data</a></p>
           </details>
           <details class="faq__item">
             <summary>What does the audit cost?</summary>
@@ -362,7 +426,7 @@
       <ul class="site-footer__links">
         <li>[YOUR EMAIL]</li>
         <li>[LINKEDIN]</li>
-        <li>[PRIVACY PAGE]</li>
+        <li><a href="data.html">Data and privacy</a></li>
         <li>© <span id="year">2026</span> BackSolve AI</li>
       </ul>
     </div>

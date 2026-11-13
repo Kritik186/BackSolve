@@ -50,6 +50,8 @@ svg { display: block; }
 .h3 { font-family: var(--font-display); font-size: 24px; line-height: 1.2; font-weight: var(--display-weight); letter-spacing: calc(var(--display-tracking) * 0.5); }
 .sub { margin-top: 16px; max-width: 560px; text-wrap: pretty; font-size: clamp(17px, 1.32vw, 19px); line-height: 1.55; color: var(--body); }
 .lede { max-width: 640px; font-size: clamp(17px, 1.36vw, 20px); line-height: 1.55; color: var(--body); text-wrap: balance; }
+.textlink { color: var(--ice); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; white-space: nowrap; transition: color 0.2s; }
+.textlink:hover { color: #FFFFFF; }
 .tag { display: inline-block; font-size: 14px; line-height: 1.3; color: #C6D0EA; padding: 7px 16px; border-radius: 999px; border: 1px solid rgba(140, 170, 255, 0.28); background: rgba(70, 110, 255, 0.10); }
 
 /* ---------- Buttons ---------- */
@@ -124,6 +126,53 @@ svg { display: block; }
 .loopicon { position: relative; flex: none; width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(77, 124, 255, 0.5); }
 .loopicon::after { content: ''; position: absolute; left: 50%; top: -5.5px; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: var(--ice); box-shadow: 0 0 10px rgba(110, 155, 255, 0.95); }
 
+/* What one loop costs. The ring is one person's working year; the script sets --share (0 to 1) on .calc
+   and --fill on each slider, and CSS draws the rest. Hidden without the script, which does the sums. */
+.cost { display: none; padding-top: 0; background: var(--bg-deep); }
+.js .cost { display: block; }
+.calc { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 72px; align-items: center; }
+.dial { margin-top: 28px; max-width: 480px; }
+.sub + .dial { margin-top: 38px; }
+.dial__top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.dial label, .often legend { font-size: 15.5px; color: var(--body); }
+.dial output { font-family: var(--font-display); font-weight: var(--display-weight); font-size: 30px; line-height: 1; letter-spacing: -0.02em; color: var(--text); }
+.dial input { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 36px; margin: 2px 0 0; padding: 0; background: transparent; cursor: pointer; }
+.dial input::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--sky) var(--fill, 0%), var(--line-strong) var(--fill, 0%)); }
+.dial input::-moz-range-track { height: 4px; border-radius: 4px; background: var(--line-strong); }
+.dial input::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--sky); }
+.dial input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; margin-top: -9px; border: 0; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 5px rgba(110, 155, 255, 0.25), 0 0 18px rgba(110, 155, 255, 0.8); transition: box-shadow 0.2s; }
+.dial input::-moz-range-thumb { width: 22px; height: 22px; border: 0; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 0 5px rgba(110, 155, 255, 0.25), 0 0 18px rgba(110, 155, 255, 0.8); }
+.dial input:focus-visible { outline: none; }
+.dial input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--bg-deep), 0 0 0 5px var(--sky), 0 0 18px rgba(110, 155, 255, 0.8); }
+.dial input:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--bg-deep), 0 0 0 5px var(--sky), 0 0 18px rgba(110, 155, 255, 0.8); }
+.often { min-width: 0; margin: 30px 0 0; padding: 0; border: 0; }
+.often legend { padding: 0; }
+.often__set { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.often label { position: relative; cursor: pointer; }
+.often input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.often span { display: inline-flex; align-items: center; }
+.often label:hover span { color: var(--text); border-color: rgba(140, 170, 255, 0.5); }
+.often input:checked + span { background: var(--text); border-color: var(--text); color: var(--bg); }
+.often input:focus-visible + span { outline: 2px solid var(--sky); outline-offset: 3px; }
+.calc__result { text-align: center; }
+.calc__ring { position: relative; width: min(100%, 340px); aspect-ratio: 1; margin-inline: auto; }
+.calc__ring::before { content: ''; position: absolute; inset: -16%; border-radius: 50%; background: radial-gradient(closest-side, rgba(77, 124, 255, 0.2), transparent); pointer-events: none; }
+.calc__ring svg { position: relative; width: 100%; height: 100%; overflow: visible; }
+.calc__base { stroke: rgba(77, 124, 255, 0.32); stroke-width: 2; }
+.calc__glow, .calc__arc { stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--share, 0)); }
+.calc__glow { stroke: var(--blue); stroke-opacity: 0.34; stroke-width: 12; }
+.calc__arc { stroke: var(--ice); stroke-width: 3; }
+.calc__bead { transform-origin: 120px 120px; transform: rotate(calc(var(--share, 0) * 360deg)); }
+.calc__bead circle:first-child { fill: var(--blue-soft); fill-opacity: 0.32; }
+.calc__bead circle:last-child { fill: #FFFFFF; }
+.calc__figure { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.calc__hours { font-family: var(--font-display); font-weight: var(--display-weight); font-size: clamp(64px, 6.2vw, 88px); line-height: 1; letter-spacing: -0.035em; color: #FFFFFF; }
+.calc__hours.is-long { font-size: clamp(46px, 4.4vw, 60px); }
+.calc__unit { margin-top: 8px; font-size: 15px; color: var(--muted); }
+.calc__line { min-height: 2.9em; max-width: 440px; margin: 28px auto 0; font-size: 19px; line-height: 1.45; color: #E6EBF7; text-wrap: balance; }
+.calc__result .btn { margin-top: 22px; }
+.calc__result .note { margin-top: 18px; font-size: 14px; }
+
 /* How we backsolve */
 .how { background: linear-gradient(var(--bg-deep), var(--bg) 320px); }
 .track { position: relative; margin-top: 64px; display: grid; grid-template-columns: repeat(3, 1fr); }
@@ -177,6 +226,10 @@ svg { display: block; }
 .team .lede + .lede { margin-top: 14px; }
 .glow-word { transition: opacity 0.25s linear; }
 
+/* Your data */
+.data { padding-top: 0; }
+.data .panel__main .h2 { margin-top: 0; }
+
 /* Questions */
 .questions { padding-bottom: 24px; }
 .questions__grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 64px; align-items: start; }
@@ -223,7 +276,7 @@ svg { display: block; }
 /* Use cases */
 .filters { display: none; flex-wrap: wrap; align-items: center; gap: 8px; }
 .js .filters { display: flex; }
-.filter { height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03); color: var(--body); font-family: inherit; font-size: 15px; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.filter, .often span { height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03); color: var(--body); font-family: inherit; font-size: 15px; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
 .filter:hover { color: var(--text); border-color: rgba(140, 170, 255, 0.5); }
 .filter[aria-pressed='true'] { background: var(--text); border-color: var(--text); color: var(--bg); }
 .filters__count { margin-left: auto; font-size: 14.5px; color: var(--muted); }
@@ -276,6 +329,9 @@ svg { display: block; }
 .block .reasons { margin-top: 40px; }
 .block .note { margin-top: 8px; }
 
+/* Your data page */
+.block .sub { max-width: 620px; }
+
 /* Closing call to action on inner pages */
 .cta-band { margin-top: clamp(56px, 7vw, 96px); padding: clamp(40px, 5vw, 64px) 24px; text-align: center; border-radius: 28px; border: 1px solid rgba(140, 170, 255, 0.28); background: radial-gradient(90% 140% at 50% 0%, rgba(77, 124, 255, 0.22), rgba(255, 255, 255, 0.02) 70%); }
 .cta-band .h2 { margin-inline: auto; }
@@ -284,7 +340,7 @@ svg { display: block; }
 
 /* Footer page links */
 .site-footer__pages { display: flex; flex-wrap: wrap; gap: 8px 24px; color: var(--body); }
-.site-footer__pages a:hover { color: #FFFFFF; }
+.site-footer__pages a:hover, .site-footer__links a:hover { color: #FFFFFF; }
 
 /* ---------- Motion ---------- */
 
@@ -370,6 +426,10 @@ svg { display: block; }
   .path__item.is-active::after { animation: nudge 0.9s var(--ease) 0.25s; }
 
   .faq__item[open] p { animation: rise 0.4s var(--ease); }
+
+  /* The loop calculator: the lit part of the ring and its light glide to each new answer. */
+  .calc__glow, .calc__arc { transition: stroke-dashoffset 0.7s var(--ease); }
+  .calc__bead { transition: transform 0.7s var(--ease); }
 }
 
 /* ---------- Responsive ---------- */
@@ -394,6 +454,8 @@ svg { display: block; }
   .path__item.is-active::after { animation-name: nudge-down; }
   .questions__grid, .split { grid-template-columns: 1fr; gap: 36px; }
   .split { margin-top: 0; }
+  .calc { grid-template-columns: 1fr; gap: 48px; }
+  .dial { max-width: none; }
 }
 
 /* Small screens: the links move into a panel under the header, opened by the menu button.
@@ -429,4 +491,5 @@ svg { display: block; }
   .cards { grid-template-columns: 1fr; }
   .card { min-height: 0; gap: 28px; }
   .site-footer__inner { flex-direction: column; align-items: flex-start; }
+  .calc__ring { width: min(100%, 290px); }
 }

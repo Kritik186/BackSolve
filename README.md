@@ -1,6 +1,6 @@
 # BackSolve AI — website
 
-Marketing site for BackSolve AI, in the "Orbit" design: a home page, plus Use cases, Services and How it works pages. Plain HTML, CSS and JavaScript: no framework, no build step, no dependencies.
+Marketing site for BackSolve AI, in the "Orbit" design: a home page, plus Use cases, Services, How it works and Your data pages. Plain HTML, CSS and JavaScript: no framework, no build step, no dependencies.
 
 > Stuck in a loop? We backsolve the way out.
 
@@ -28,6 +28,7 @@ index.html          Home page
 use-cases.html      Ten example use cases, with a filter by kind of firm
 services.html       The Loop Audit, build sprints and next projects in detail
 how-it-works.html   The three steps in detail, and what we need from the client
+data.html           How client data is handled, and what this website collects
 css/styles.css      Design tokens (colours, type), layout, components, motion
 js/main.js          All animation and behaviour, the form, and CONFIG
 assets/favicon.svg  Browser tab icon
@@ -39,16 +40,16 @@ CLAUDE.md           Project notes for Claude Code
 
 ### 1. Fill in the placeholders
 
-Everything that is not yet known is written in CAPITALS inside [SQUARE BRACKETS] in the four `.html` files, usually with a `TODO` comment above it. Search for `[` to find them all.
+Everything that is not yet known is written in CAPITALS inside [SQUARE BRACKETS] in the `.html` files, usually with a `TODO` comment above it. Search for `[` to find them all.
 
 | Section | What to fill in |
 |---|---|
 | The Loop Audit | Audit length and price |
-| Why BackSolve AI | The tools you work in, and your data promise |
-| Questions | Time needed from the client's team, your data policy, your price, the tools you support |
+| Why BackSolve AI | The tools you work in |
+| Questions | Time needed from the client's team, your price, the tools you support |
 | Services page | Audit length and price, sprint length, time needed from the client, what happens if something you built stops working, what support is included after a build |
-| How it works page | Time needed from the client, your data policy, audit length and price |
-| Footer (every page) | Email, LinkedIn and privacy page links |
+| How it works page | Time needed from the client, audit length and price |
+| Footer (every page) | Email and LinkedIn links |
 
 ### 2. Connect the "Book a call" buttons and the form
 
@@ -63,6 +64,7 @@ There is no server behind the form. If you would rather collect submissions with
 
 - The team section says the engineers come from companies like J.P. Morgan, Goldman Sachs and Bain & Company, and that dedicated finance professionals work with you. Prospects can check this on LinkedIn, so keep it only while it is true of the people who do the work.
 - The Services page promises "Fixed price per project" and "No monthly commitment" for follow-on work. Keep them only if you mean them.
+- The data commitments are promises to clients. They appear on the home page ("Your data stays yours"), in the questions, on How it works and in full on `data.html`: an NDA first, work inside the client's systems where possible, access the client controls, outside services listed before the build, AI services only on terms that do not train on client data, your copies deleted within 30 days, no naming a client without permission, and notice within 72 hours if data is exposed. Strike any you will not keep. To keep the AI one, do client work only through API or business plans whose terms rule out training, never through a personal or free account. Have a lawyer read the page before you sign your first client.
 - There are no testimonials, client logos or results numbers on the site. Add them only when they are real.
 - The ten use cases are examples of what you build, and the page says so. Check that each one is something you are willing to sell. When a client agrees to share a real story, add it to `use-cases.html` (there is a `TODO` comment marking the spot).
 
@@ -74,9 +76,9 @@ The mark is a loop with a line leaving it, drawn as inline SVG next to the name 
 
 Delete the `<meta name="robots" content="noindex">` line from the `<head>` of `index.html`.
 
-### 6. Add a privacy page
+### 6. Keep the website note true
 
-The form collects a name and an email address, so link a privacy page from the footer before going live.
+`data.html` ends with a short paragraph on what this website collects: no cookies, no analytics, a form that opens the visitor's own mail app, and fonts loaded from Google Fonts. That is true of the site as built. If you add analytics, a booking widget or a form service, rewrite that paragraph in the same change. It is a plain statement, not a legal privacy policy, so check whether the places you sell in require one.
 
 ## Deploy
 
@@ -129,6 +131,9 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 - On Services, the summary of each service stays in view while its details scroll past.
 - On How it works, the line across the three steps runs once on its own when the page opens.
 - On small screens the menu button opens and closes the links panel.
+
+**The loop calculator**
+- On the home page, the visitor sets how many people do a task, how long it takes and how often. A ring fills to show how much of one person's working year that is, the hours count up to the new figure, and a button carries the numbers into the booking form.
 
 **Small touches**
 - The dot on each loop card keeps circling.

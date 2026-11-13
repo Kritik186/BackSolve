@@ -548,6 +548,97 @@
     });
   }
 
+  // --- What one loop costs -------------------------------------------------------
+  // The visitor's own numbers in, hours a year out. Nothing here is an estimate
+  // of ours: people x hours x times a year. CSS draws the ring from --share on
+  // .calc (the part of one person's working year, 0 to 1) and fills each slider
+  // from --fill. The only assumption is the working year, and the page states it.
+  const calc = document.getElementById('calc');
+  if (calc) {
+    const YEAR_HOURS = 48 * 40;   // one person's working year
+    const DAY_HOURS = 8;
+    const sliders = Array.from(calc.querySelectorAll('input[type="range"]'));
+    const people = calc.querySelector('#c-people');
+    const hours = calc.querySelector('#c-hours');
+    const totalEl = calc.querySelector('#c-total');
+    const lineEl = calc.querySelector('#c-line');
+    const sendButton = calc.querySelector('#c-send');
+    const whole = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+    const oneDecimal = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 });
+    const plural = (n, one, many) => (n === 1 ? one : many);
+
+    let total = 0;       // hours a year, from the current inputs
+    let shown = 0;       // the figure on screen while it counts toward `total`
+    let countFrom = 0;
+    let countBegan = 0;
+    const count = (now) => {
+      if (!countBegan) countBegan = now;
+      const q = clamp((now - countBegan) / 450, 0, 1);
+      shown = countFrom + (total - countFrom) * (1 - Math.pow(1 - q, 3));
+      totalEl.textContent = whole.format(Math.round(shown));
+      if (q >= 1) stopTask(count);
+    };
+
+    const read = () => {
+      const often = calc.querySelector('input[name="often"]:checked');
+      return { p: Number(people.value), h: Number(hours.value), runs: Number(often.value), say: often.dataset.say };
+    };
+
+    const update = (animate) => {
+      const { p, h, runs } = read();
+      total = p * h * runs;
+      const share = total / YEAR_HOURS;
+      const days = total / DAY_HOURS;
+
+      sliders.forEach((slider) => {
+        const min = Number(slider.min);
+        slider.style.setProperty('--fill', `${(((Number(slider.value) - min) / (Number(slider.max) - min)) * 100).toFixed(1)}%`);
+        calc.querySelector(`#${slider.id}-out`).textContent = oneDecimal.format(Number(slider.value));
+      });
+      calc.style.setProperty('--share', clamp(share, 0, 1).toFixed(4));
+      totalEl.classList.toggle('is-long', total >= 10000);
+
+      const dayText = days < 1 ? 'less than one working day'
+        : `${days < 10 ? oneDecimal.format(days) : whole.format(Math.round(days))} working ${plural(days, 'day', 'days')}`;
+      if (share >= 1) {
+        const heads = Math.round(share * 10) / 10;
+        lineEl.textContent = `That is ${dayText} a year: the work of ${oneDecimal.format(heads)} ${plural(heads, 'person', 'people')}, full time.`;
+      } else {
+        const percent = share < 0.01 ? 'under 1%' : `${Math.round(share * 100)}%`;
+        lineEl.textContent = `That is ${dayText} a year: ${percent} of one person's time.`;
+      }
+
+      if (animate && !reduceMotion) {
+        countFrom = shown;
+        countBegan = 0;
+        startTask(count);
+      } else {
+        shown = total;
+        totalEl.textContent = whole.format(total);
+      }
+    };
+    calc.addEventListener('input', () => update(true));
+    update(false);
+
+    // "Bring this loop to the call" carries the numbers into the booking form,
+    // unless the visitor has already written something there.
+    const task = document.getElementById('f-task');
+    let lastFill = '';
+    if (sendButton && task) {
+      sendButton.addEventListener('click', () => {
+        if (task.value.trim() && task.value !== lastFill) return;
+        const { p, h, say } = read();
+        lastFill = `It takes ${p} ${plural(p, 'person', 'people')} about ${oneDecimal.format(h)} ${plural(h, 'hour', 'hours')}${p > 1 ? ' each' : ''}, ${say}: roughly ${whole.format(total)} hours a year.\n\nThe task: `;
+        task.value = lastFill;
+        // After the jump to the form has begun, so the browser does not take the focus away again.
+        window.setTimeout(() => {
+          task.focus({ preventScroll: true });
+          task.setSelectionRange(lastFill.length, lastFill.length);
+        }, 0);
+      });
+    }
+  }
+
   // --- How we backsolve: the line across the three steps -------------------------
   // CSS reads --t (0 to 1) for the lit line and the light at its tip; each step
   // lights as the tip reaches it. On the home page the line follows the scroll.
@@ -603,7 +694,7 @@
     }
   }
 
-  // --- After the audit: the highlight steps through Audit, Build, Retainer -----
+  // --- After the audit: the highlight steps through the three boxes in turn ------
   const path = document.querySelector('.path');
   if (path && !reduceMotion && hasObserver) {
     const items = Array.from(path.querySelectorAll('.path__item'));

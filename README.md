@@ -42,21 +42,23 @@ CLAUDE.md           Project notes for Claude Code
 
 Everything that is not yet known is written in CAPITALS inside [SQUARE BRACKETS] in the `.html` files, usually with a `TODO` comment above it. Search for `[` to find them all.
 
+Two are left, both on the home page and both about the tools you work in:
+
 | Section | What to fill in |
 |---|---|
-| The Loop Audit | Audit length and price |
 | Why BackSolve AI | The tools you work in |
-| Questions | Time needed from the client's team, your price, the tools you support |
-| Services page | Audit length and price, sprint length, time needed from the client, what happens if something you built stops working, what support is included after a build |
-| How it works page | Time needed from the client, audit length and price |
-| Footer (every page) | Email and LinkedIn links |
+| Questions | The tools you support |
+
+The rest were filled with the owner's own terms: the audit takes one to two weeks depending on the work, for a fixed fee agreed on the first call (no figure is shown, on purpose); it needs about two hours a week from the client's team; sprint length depends on the task; and fixes and support are included for 60 days after each build.
 
 ### 2. Connect the "Book a call" buttons and the form
 
-Open `js/main.js` and set the two values in `CONFIG` at the top:
+Both are set in `CONFIG` at the top of `js/main.js`:
 
-- `email`: the form opens the visitor's mail app with a pre-filled message to this address. Until it is set, the form shows "This form is not connected yet."
-- `bookingUrl` (optional): a Cal.com or Calendly link. If set, every "Book a call" button opens it in a new tab.
+- `email` is `loop@backsolveai.com`. The form opens the visitor's mail app with a pre-filled message to this address, and the footer of every page links to it. The address only works once the domain and the mailbox exist, so create both before launch and send yourself a test message through the form.
+- `bookingUrl` is empty on purpose, so every "Book a call" button leads to the form. To use a Cal.com or Calendly link instead, put it here and the buttons open it in a new tab.
+
+There is no LinkedIn link on the site, also on purpose.
 
 There is no server behind the form. If you would rather collect submissions without the visitor's mail app, replace the submit handler with a form service.
 

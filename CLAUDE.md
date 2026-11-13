@@ -27,11 +27,13 @@ The design is called "Orbit": a dark site where the loop is a glowing ring of "c
 - Colours and fonts come from the CSS custom properties in `:root`. Do not hard-code new colours in CSS. The inline SVGs in `index.html` repeat a few of the same hex values because SVG gradients cannot read them.
 - Two typefaces: Newsreader 500 for headlines (`--font-display`, with `--display-weight` and `--display-tracking`), Geist 400, 500 and 600 for everything else (`--font`). Headline classes are `.hero__title`, `.h2`, `.h3` and `.case__title`.
 - Motion hooks are data attributes: `data-reveal` (block fades up), `data-stagger` (children reveal in sequence), `data-track` (the three-step line: it follows the scroll on the home page, and with `data-track="timed"` it runs once on its own, which suits a list at the top of a page).
-- The script hands numbers to CSS through custom properties and CSS does the drawing: `--p` on `.hero` (0 at the top of the page, 1 once the hero has scrolled away), `--t` on `.track` (how far the steps line has run), `--mx` `--my` `--rx` `--ry` on each card (highlight and tilt), `--bx` `--by` on buttons (lean), `--px` `--py` on the hero light, `--share` on `.calc` (the lit part of the calculator ring, 0 to 1) and `--fill` on each of its sliders.
+- The script hands numbers to CSS through custom properties and CSS does the drawing: `--p` on `.hero` (0 at the top of the page, 1 once the hero has scrolled away), `--t` on `.track` (how far the steps line has run), `--mx` `--my` on every box the pointer can light (cards, panels, services, use cases, the form, and the rows of the reasons and questions lists), `--rx` `--ry` on each card (tilt), `--px` `--py` on `.team` (its glow), `--bx` `--by` on buttons (lean), `--px` `--py` on the hero light, `--share` on `.calc` (the lit part of the calculator ring, 0 to 1) and `--fill` on each of its sliders.
 - Anything that needs a frame-by-frame update registers with `startTask` and must stop itself with `stopTask` when it is off screen or finished. Do not add a second `requestAnimationFrame` loop or a second scroll listener.
 - All motion must respect `prefers-reduced-motion`, and the page must stay readable with JavaScript off. Reveal styles are scoped under the `.js` class for that reason.
 - Breakpoints: 1100px, 900px, 860px (header links collapse into the menu button), 760px, 600px.
-- The horizon SVG draws only the top arc of the ring. A full circle would show its far side further down long pages.
+- The horizon SVG draws only the top arc of the ring. A full circle would show its far side further down long pages. The lights that travel along it are not in the markup: the script adds a `.horizon__lights` layer to every `.horizon`, on the same circle as the rim (centre `720,1480`, radius `800`), clipped to the horizon so only the top arc shows.
+- The script splits every `.h2` that holds plain text into `.glow-word` spans so it can light up word by word. A headline that needs a link or other markup inside it is left alone, so keep `.h2` text plain where you want the effect.
+- The loop icons and the horizon lights are CSS animations whose speed the script raises while the page scrolls (one shared rate, in the "Everything that turns" block). Anything new that should whirl with the scroll joins that list instead of getting its own loop.
 
 ## The hero ring
 
@@ -60,5 +62,6 @@ The design is called "Orbit": a dark site where the loop is a glowing ring of "c
 - On a phone width, open the menu and follow a link. On Use cases, press each filter and check the count.
 - Scroll to the bottom and confirm every section has revealed and all three steps in "How we backsolve" are lit.
 - Load the page once with reduced motion switched on: everything must be visible and nothing may move.
+- Scroll each page to the bottom and confirm no headline is left dim: every word of every `.h2` must end at full brightness.
 - Submit the form with `CONFIG.email` empty and confirm the "not connected" message appears.
 - On the home page, move both calculator sliders and press each "How often" choice: the figure must equal people x hours x times a year (240, 48, 12 or 4), and "Bring this loop to the call" must fill the form's last box without overwriting anything already typed there.

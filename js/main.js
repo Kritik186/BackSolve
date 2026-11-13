@@ -528,24 +528,91 @@
     });
   }
 
-  // --- Cards: a highlight follows the pointer and the card tilts toward it ----
+  // --- Boxes: a light follows the pointer, and the cards tilt toward it ---------
+  // CSS reads --mx and --my: the cards glow under the pointer, every other box
+  // (panels, services, use cases, the form) lights its edge nearest to it, and
+  // the ruled lists light the rule above the row the pointer is on.
   if (finePointer) {
-    document.querySelectorAll('.card').forEach((card) => {
-      card.addEventListener('pointermove', (event) => {
-        const rect = card.getBoundingClientRect();
+    document.querySelectorAll('.card, .panel, .service, .case, .cta-band, .form, .reasons li, .faq__item').forEach((box) => {
+      const tilts = box.classList.contains('card');
+      box.addEventListener('pointermove', (event) => {
+        const rect = box.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
-        card.style.setProperty('--mx', `${x.toFixed(0)}px`);
-        card.style.setProperty('--my', `${y.toFixed(0)}px`);
-        if (reduceMotion) return;
-        card.style.setProperty('--ry', `${((x / rect.width - 0.5) * 8).toFixed(2)}deg`);
-        card.style.setProperty('--rx', `${((0.5 - y / rect.height) * 8).toFixed(2)}deg`);
+        box.style.setProperty('--mx', `${x.toFixed(0)}px`);
+        box.style.setProperty('--my', `${y.toFixed(0)}px`);
+        if (!tilts || reduceMotion) return;
+        box.style.setProperty('--ry', `${((x / rect.width - 0.5) * 8).toFixed(2)}deg`);
+        box.style.setProperty('--rx', `${((0.5 - y / rect.height) * 8).toFixed(2)}deg`);
       });
-      card.addEventListener('pointerleave', () => {
-        card.style.setProperty('--rx', '0deg');
-        card.style.setProperty('--ry', '0deg');
+      if (!tilts) return;
+      box.addEventListener('pointerleave', () => {
+        box.style.setProperty('--rx', '0deg');
+        box.style.setProperty('--ry', '0deg');
       });
     });
+  }
+
+  // --- Horizon: lights travel along the ring at the foot of the page -----------
+  // The same ring opens every inner page. The script adds the lights, so the
+  // markup stays identical in every file. They sit on the circle the rim is
+  // drawn on (centre 720,1480, radius 800) and CSS turns them, as in the hero.
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const horizonLights = Array.from(document.querySelectorAll('.horizon')).map((horizon) => {
+    const holder = document.createElement('div');
+    holder.className = 'horizon__lights';
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '-80 680 1600 1600');
+    svg.setAttribute('focusable', 'false');
+    for (let i = 0; i < 16; i += 1) {
+      const light = document.createElementNS(SVG_NS, 'g');
+      light.setAttribute('transform', `rotate(${(i * 22.5 + 7).toFixed(1)} 720 1480)`);
+      [['10', 'halo'], ['5.5', 'glow'], ['2.6', 'core']].forEach(([radius, part]) => {
+        const circle = document.createElementNS(SVG_NS, 'circle');
+        circle.setAttribute('cx', '720');
+        circle.setAttribute('cy', '680');
+        circle.setAttribute('r', radius);
+        circle.setAttribute('class', `horizon__light horizon__light--${part}`);
+        light.appendChild(circle);
+      });
+      svg.appendChild(light);
+    }
+    holder.appendChild(svg);
+    horizon.appendChild(holder);
+    if (hasObserver) {
+      new IntersectionObserver((entries) => {
+        entries.forEach((entry) => holder.classList.toggle('is-paused', !entry.isIntersecting));
+      }).observe(horizon);
+    }
+    return svg;
+  });
+
+  // --- Everything that turns, turns faster while the page scrolls ----------------
+  // The loop icons and the horizon lights are CSS animations. Scrolling speeds
+  // them up and they settle again, the same way the hero ring behaves.
+  if (!reduceMotion && document.documentElement.getAnimations) {
+    const named = (el, name) => (el.getAnimations ? el.getAnimations().find((animation) => animation.animationName === name) : null);
+    const turning = Array.from(document.querySelectorAll('.loopicon')).map((el) => named(el, 'spin'))
+      .concat(horizonLights.map((el) => named(el, 'orbit-spin')))
+      .filter(Boolean);
+    if (turning.length) {
+      let push = 0;     // how hard the last scroll pushed; fades each frame
+      let rate = 1;
+      const whirl = () => {
+        push *= 0.93;
+        rate += (1 + push - rate) * 0.14;
+        const settled = push < 0.03 && Math.abs(rate - 1) < 0.03;
+        if (settled) rate = 1;
+        turning.forEach((animation) => { animation.playbackRate = rate; });
+        if (settled) stopTask(whirl);
+      };
+      watchScroll(() => {
+        const speed = Math.min(Math.abs(scroll.velocity) * 6, 9);
+        if (speed < 0.4) return;
+        push = Math.max(push, speed);
+        startTask(whirl);
+      });
+    }
   }
 
   // --- What one loop costs -------------------------------------------------------
@@ -676,6 +743,32 @@
         setProgress(clamp((scroll.viewH * 0.82 - track.getBoundingClientRect().top) / (scroll.viewH * 0.42), 0, 1));
       });
 
+      // Once the whole line is lit, a light runs along it again every few
+      // seconds for as long as the steps are on screen.
+      const pulse = document.createElement('li');
+      pulse.className = 'track__pulse';
+      pulse.setAttribute('aria-hidden', 'true');
+      pulse.setAttribute('role', 'presentation');
+      track.appendChild(pulse);
+      if (hasObserver && pulse.animate) {
+        let pulsing = 0;
+        const firePulse = () => {
+          if (narrow.matches || Number(track.style.getPropertyValue('--t')) < 0.999) return;
+          pulse.animate([
+            { opacity: 0, transform: 'translateX(0)' },
+            { opacity: 1, offset: 0.12 },
+            { opacity: 1, offset: 0.86 },
+            { opacity: 0, transform: `translateX(${track.offsetWidth}px)` },
+          ], { duration: 1900, easing: 'cubic-bezier(0.4, 0, 0.4, 1)' });
+        };
+        new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            window.clearInterval(pulsing);
+            pulsing = entry.isIntersecting ? window.setInterval(firePulse, 4200) : 0;
+          });
+        }, { threshold: 0.3 }).observe(track);
+      }
+
       if (timed) {
         let began = 0;
         const run = (now) => {
@@ -716,25 +809,54 @@
     }, { threshold: 0.4 }).observe(path);
   }
 
-  // --- Team: the line lights up word by word as it scrolls into view ----------
-  const teamTitle = document.querySelector('.team .h2');
-  if (teamTitle && !reduceMotion) {
-    const words = teamTitle.textContent.trim().split(/\s+/).map((text) => {
-      const span = document.createElement('span');
-      span.className = 'glow-word';
-      span.textContent = text;
-      return span;
-    });
-    teamTitle.textContent = '';
-    words.forEach((span, i) => {
-      teamTitle.appendChild(span);
-      if (i < words.length - 1) teamTitle.appendChild(document.createTextNode(' '));
-    });
-    watchScroll(() => {
-      const q = clamp((scroll.viewH * 0.88 - teamTitle.getBoundingClientRect().top) / (scroll.viewH * 0.5), 0, 1);
-      words.forEach((span, i) => {
-        span.style.opacity = (0.22 + 0.78 * clamp(q * (words.length + 1) - i, 0, 1)).toFixed(3);
+  // --- Headlines light up word by word as they scroll into view ----------------
+  // Every section headline is split into words. Each word starts dim and
+  // brightens as the headline rises up the screen, and then stays lit.
+  if (!reduceMotion) {
+    const headlines = Array.from(document.querySelectorAll('.h2'))
+      .filter((heading) => heading.children.length === 0 && heading.textContent.trim())
+      .map((heading) => {
+        const words = heading.textContent.trim().split(/\s+/).map((text) => {
+          const span = document.createElement('span');
+          span.className = 'glow-word';
+          span.textContent = text;
+          return span;
+        });
+        heading.textContent = '';
+        words.forEach((span, i) => {
+          heading.appendChild(span);
+          if (i < words.length - 1) heading.appendChild(document.createTextNode(' '));
+        });
+        return { heading, words, lit: false };
       });
+    if (headlines.length) {
+      watchScroll(() => {
+        const atEnd = scroll.y >= root.scrollHeight - scroll.viewH - 2;
+        headlines.forEach((item) => {
+          if (item.lit) return;
+          const top = item.heading.getBoundingClientRect().top;
+          if (top > scroll.viewH * 1.1 && !atEnd) return;   // not on screen yet
+          const q = atEnd && top < scroll.viewH ? 1 : clamp((scroll.viewH * 0.9 - top) / (scroll.viewH * 0.36), 0, 1);
+          item.words.forEach((span, i) => {
+            span.style.opacity = (0.22 + 0.78 * clamp(q * (item.words.length + 1) - i, 0, 1)).toFixed(3);
+          });
+          if (q >= 1) item.lit = true;
+        });
+      });
+    }
+  }
+
+  // --- Team: the glow behind the words leans toward the pointer ------------------
+  const team = document.querySelector('.team');
+  if (team && finePointer && !reduceMotion) {
+    team.addEventListener('pointermove', (event) => {
+      const rect = team.getBoundingClientRect();
+      team.style.setProperty('--px', `${(((event.clientX - rect.left) / rect.width - 0.5) * 220).toFixed(0)}px`);
+      team.style.setProperty('--py', `${(((event.clientY - rect.top) / rect.height - 0.5) * 120).toFixed(0)}px`);
+    });
+    team.addEventListener('pointerleave', () => {
+      team.style.setProperty('--px', '0px');
+      team.style.setProperty('--py', '0px');
     });
   }
 

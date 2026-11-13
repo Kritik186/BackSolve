@@ -114,15 +114,17 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 **Following the scroll**
 - Scrolling away from the hero flies into the ring: the headline lifts and fades, the ring grows, the stars lag behind.
 - Fast scrolling stretches the stars into short streaks.
-- The ring spins faster while the page is moving, then settles. The header mark spins too and comes to rest upright.
+- The ring spins faster while the page is moving, then settles. The header mark spins too and comes to rest upright. Further down, the loop icons and the lights on each horizon speed up in the same way.
 - In "How we backsolve", a light runs along the line as you scroll and each step lights as it arrives.
-- The team headline lights up word by word.
+- Every section headline lights up word by word as it rises up the screen, then stays lit.
 - Sections fade and rise as they enter the screen, lists reveal item by item, and the ticks in the audit list draw themselves.
 - A progress bar at the top fills as the page scrolls, and the header link for the section on screen is highlighted.
 
 **Following the pointer**
 - A soft light and the stars shift with the pointer across the hero, nearer stars more than far ones. Stars near the pointer link up into a small constellation.
 - The main buttons lean toward the pointer. Cards tilt toward it and a highlight follows it.
+- A light follows the pointer round the edge of each panel, service, use case and the booking form, and along the rule above each row in the reasons and the questions.
+- The glow behind the team words leans toward the pointer.
 - Hovering the name in the header fires the line out of the loop again.
 
 **Inner pages**
@@ -135,9 +137,14 @@ All tokens live at the top of `css/styles.css` as CSS custom properties.
 **The loop calculator**
 - On the home page, the visitor sets how many people do a task, how long it takes and how often. A ring fills to show how much of one person's working year that is, the hours count up to the new figure, and a button carries the numbers into the booking form.
 
+**Always running further down the page**
+- Lights travel along the horizon above the booking form, and along the same horizon at the top of every inner page.
+- Once the three steps in "How we backsolve" are lit, a light runs along the line again every few seconds.
+- The bright line on top of each panel drifts along its edge.
+
 **Small touches**
-- The dot on each loop card keeps circling.
-- In "After the audit", the highlight steps through Audit, Build sprints and Next projects.
+- The light on each loop card keeps circling, with a short tail behind it.
+- In "After the audit", the highlight steps through Audit, Build sprints and Next projects. As each box takes it, a light crosses its top edge and the arrow to the next box redraws.
 - Answers in the questions section open and close smoothly.
 - The horizon above the booking form brightens while someone is typing in it.
 

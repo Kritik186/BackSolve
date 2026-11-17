@@ -19,6 +19,7 @@ The design is called "Orbit": a dark site where the loop is a glowing ring of "c
 - Inner pages are built from two blocks: `.pagehead` (which reuses the hero's `hero__copy` and `hero__title` classes) and `.inside` (the horizon, then the page body in `.inside__body`).
 - `css/styles.css`: tokens in `:root`, then base, type, buttons, header, hero, sections, motion, responsive.
 - `js/main.js`: one IIFE. `CONFIG` at the top holds the email and booking link. Below it: one shared frame loop (`startTask` / `stopTask`), one shared scroll reader (`watchScroll`), then a block per animation.
+- `CNAME`, `robots.txt`, `sitemap.xml`: the site is live at `https://backsolveai.com` on GitHub Pages. `CNAME` holds the domain and must stay in the root. Every page has its own `<link rel="canonical">` and `og:url` on that domain, and `sitemap.xml` lists every page: keep all three in step when a page is added or renamed. There is no `noindex` tag any more; do not add one back.
 - `assets/`: `favicon.svg`, `logo.svg`. The mark (a loop with a line leaving it) is also inline in the header and footer of `index.html`.
 
 ## Conventions
@@ -48,7 +49,8 @@ The design is called "Orbit": a dark site where the loop is a glowing ring of "c
 
 ## Content rules
 
-- Text in [SQUARE BRACKETS] is a placeholder for a fact only the owner knows. Two are left, both about the tools he works in. Never replace a placeholder with an invented value. Ask the owner.
+- Text in [SQUARE BRACKETS] marks a fact only the owner knows. None are left on the site. If new copy needs such a fact, add a placeholder and ask the owner: never invent the value.
+- The tools named on the site are the owner's answer: Microsoft 365 (Excel, PowerPoint, Word and Outlook) and whatever else the client's team already uses. Do not name other products, such as a particular CRM, unless he supplies them.
 - The owner's terms, in his words, are on the site and must stay consistent wherever they appear: the audit takes one to two weeks depending on the work; the fee is fixed and agreed on the first call, with no figure shown; the audit needs about two hours a week from the client's team; sprint length depends on the task; fixes and support are included for 60 days after each build. Do not add a price, a set sprint length or a longer support period.
 - Contact is `loop@backsolveai.com`, in the footer of every page and in `CONFIG.email`. There is no LinkedIn link and no booking link because the owner asked for neither: do not add placeholders for them, and leave `CONFIG.bookingUrl` empty unless he supplies a link.
 - No testimonials, client logos, statistics or results numbers unless the owner supplies real ones.

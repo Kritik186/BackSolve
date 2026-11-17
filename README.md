@@ -4,13 +4,13 @@ Marketing site for BackSolve AI, in the "Orbit" design: a home page, plus Use ca
 
 > Stuck in a loop? We backsolve the way out.
 
-## Live preview
+## Live site
 
-https://kritik186.github.io/BackSolve/
+https://backsolveai.com
 
-GitHub Pages serves the `main` branch of this repository, so every push to `main` shows up there a minute or two later. It costs nothing while the repository is public.
+GitHub Pages serves this repository, so a push to the published branch shows up a minute or two later. It costs nothing while the repository is public. The old address, https://kritik186.github.io/BackSolve/, redirects to the domain.
 
-The page carries a `noindex` tag so search engines skip it while it still has placeholders. Remove that line from the `<head>` of `index.html` when you launch.
+Search engines are allowed in: there is no `noindex` tag, `robots.txt` points to `sitemap.xml`, and each page carries a canonical link to its address on the domain.
 
 ## Run it locally
 
@@ -40,16 +40,7 @@ CLAUDE.md           Project notes for Claude Code
 
 ### 1. Fill in the placeholders
 
-Everything that is not yet known is written in CAPITALS inside [SQUARE BRACKETS] in the `.html` files, usually with a `TODO` comment above it. Search for `[` to find them all.
-
-Two are left, both on the home page and both about the tools you work in:
-
-| Section | What to fill in |
-|---|---|
-| Why BackSolve AI | The tools you work in |
-| Questions | The tools you support |
-
-The rest were filled with the owner's own terms: the audit takes one to two weeks depending on the work, for a fixed fee agreed on the first call (no figure is shown, on purpose); it needs about two hours a week from the client's team; sprint length depends on the task; and fixes and support are included for 60 days after each build.
+Anything not yet known is written in CAPITALS inside [SQUARE BRACKETS] in the `.html` files, with a `TODO` comment above it. None are left. They were filled with the owner's own terms: he builds inside Microsoft 365 (Excel, PowerPoint, Word and Outlook) and whatever else the client's team already uses; the audit takes one to two weeks depending on the work, for a fixed fee agreed on the first call (no figure is shown, on purpose); it needs about two hours a week from the client's team; sprint length depends on the task; and fixes and support are included for 60 days after each build.
 
 ### 2. Connect the "Book a call" buttons and the form
 
@@ -74,17 +65,34 @@ There is no server behind the form. If you would rather collect submissions with
 
 The mark is a loop with a line leaving it, drawn as inline SVG next to the name in the header and the footer of every page. The same shape is in `assets/favicon.svg` and `assets/logo.svg`. To change the logo, replace it in the header and footer of every page and in those two files.
 
-### 5. Let search engines in
+### 5. When you add a page
 
-Delete the `<meta name="robots" content="noindex">` line from the `<head>` of `index.html`.
+Add its address to `sitemap.xml`, and give it its own `<link rel="canonical">` and `og:url` in the `<head>`, like the other pages.
 
 ### 6. Keep the website note true
 
 `data.html` ends with a short paragraph on what this website collects: no cookies, no analytics, a form that opens the visitor's own mail app, and fonts loaded from Google Fonts. That is true of the site as built. If you add analytics, a booking widget or a form service, rewrite that paragraph in the same change. It is a plain statement, not a legal privacy policy, so check whether the places you sell in require one.
 
-## Deploy
+## Hosting and domain
 
-The site is a folder of static files, so any static host will serve it as is: Vercel, Netlify, Cloudflare Pages or GitHub Pages. Point the host at this folder; there is no build command and the output directory is the folder itself.
+The site is a folder of static files served by GitHub Pages at `backsolveai.com`. There is no build command.
+
+- **`CNAME`** in this folder holds the domain name. It is what tells GitHub Pages to answer for `backsolveai.com`. Do not delete or rename it.
+- **DNS**, set where the domain was bought:
+
+  | Type | Name | Value |
+  |---|---|---|
+  | A | `@` | `185.199.108.153` |
+  | A | `@` | `185.199.109.153` |
+  | A | `@` | `185.199.110.153` |
+  | A | `@` | `185.199.111.153` |
+  | CNAME | `www` | `kritik186.github.io` |
+
+  These are GitHub's published addresses for Pages. Check them against GitHub's "Managing a custom domain" page if the site ever stops resolving.
+- **HTTPS**: in the repository's Settings, under Pages, tick "Enforce HTTPS" once GitHub has issued the certificate.
+- **Email** is separate from the website. `loop@backsolveai.com` needs a mailbox with an email provider, which will give you MX records to add next to the ones above.
+
+Any other static host (Vercel, Netlify, Cloudflare Pages) would also serve the folder as it is. If you move, remove `CNAME` and point the DNS at the new host.
 
 ## Design reference
 
